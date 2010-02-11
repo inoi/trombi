@@ -1,8 +1,15 @@
 # Collection of possible couchdb errors
 CONFLICT = 409
-ALREADY_EXISTS = 412
-DOES_NOT_EXIST = 404
+PRECONDITION_FAILED = 412
+NOT_FOUND = 404
+SERVER_ERROR = 500
 
 # Non-http errors (or overloaded http 500 errors)
-GENERIC = 50
 INVALID_DATABASE_NAME = 51
+
+errormap = {
+    409: CONFLICT,
+    412: PRECONDITION_FAILED,
+    404: NOT_FOUND,
+    500: SERVER_ERROR
+    }
