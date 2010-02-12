@@ -14,24 +14,24 @@ import functools
 import tornadocouch
 import tornadocouch.errors
 
-@with_ioloop()
+@with_ioloop
 @with_couchdb
-def test_create_db(couch_baseurl, tornado_baseurl, ioloop, application):
+def test_create_db(baseurl, ioloop):
     def create_callback(db):
         assert isinstance(db, tornadocouch.Database)
-        f = urllib.urlopen('%s_all_dbs' % couch_baseurl)
+        f = urllib.urlopen('%s_all_dbs' % baseurl)
         eq(json.load(f), [db.name])
         ioloop.stop()
 
 
-    s = tornadocouch.Server(couch_baseurl, io_loop=ioloop)
+    s = tornadocouch.Server(baseurl, io_loop=ioloop)
     s.create('couchdb-database', callback=create_callback)
     ioloop.start()
 
-@with_ioloop()
+@with_ioloop
 @with_couchdb
-def test_db_exists(couch_baseurl, tornado_baseurl, ioloop, application):
-    s = tornadocouch.Server(couch_baseurl, io_loop=ioloop)
+def test_db_exists(baseurl, ioloop):
+    s = tornadocouch.Server(baseurl, io_loop=ioloop)
 
     def first_callback(db):
         s.create(
@@ -43,57 +43,55 @@ def test_db_exists(couch_baseurl, tornado_baseurl, ioloop, application):
     def create_errback(errno, msg):
         eq(errno, tornadocouch.errors.PRECONDITION_FAILED)
         eq(msg, "Database already exists: 'couchdb-database'")
-        f = urllib.urlopen('%s_all_dbs' % couch_baseurl)
+        f = urllib.urlopen('%s_all_dbs' % baseurl)
         eq(json.load(f), ['couchdb-database'])
         ioloop.stop()
 
     s.create('couchdb-database', callback=first_callback)
     ioloop.start()
 
-@with_ioloop()
+@with_ioloop
 @with_couchdb
-def test_invalid_db_name(couch_baseurl, tornado_baseurl, ioloop, application):
+def test_invalid_db_name(baseurl, ioloop):
     def errback(errno, msg):
         eq(errno, tornadocouch.errors.INVALID_DATABASE_NAME)
         eq(msg, "Invalid database name: 'this name is invalid'")
         ioloop.stop()
 
-    s = tornadocouch.Server(couch_baseurl, io_loop=ioloop)
+    s = tornadocouch.Server(baseurl, io_loop=ioloop)
     s.create('this name is invalid', callback=lambda x: x, errback=errback)
     ioloop.start()
 
-@with_ioloop()
+@with_ioloop
 @with_couchdb
-def test_delete_db(couch_baseurl, tornado_baseurl, ioloop, application):
-    s = tornadocouch.Server(couch_baseurl, io_loop=ioloop)
+def test_delete_db(baseurl, ioloop):
+    s = tornadocouch.Server(baseurl, io_loop=ioloop)
     def create_callback(db):
         s.delete('testdatabase', callback=delete_callback)
 
     def delete_callback():
-        f = urllib.urlopen('%s_all_dbs' % couch_baseurl)
+        f = urllib.urlopen('%s_all_dbs' % baseurl)
         eq(json.load(f), [])
         ioloop.stop()
 
     s.create('testdatabase', callback=create_callback)
     ioloop.start()
 
-@with_ioloop()
+@with_ioloop
 @with_couchdb
-def test_delete_db_not_exists(couch_baseurl, tornado_baseurl,
-                              ioloop, application):
+def test_delete_db_not_exists(baseurl, ioloop):
     def delete_errback(errno, msg):
         eq(errno, tornadocouch.errors.NOT_FOUND)
         eq(msg, "Database does not exist: 'testdatabase'")
         ioloop.stop()
 
-    s = tornadocouch.Server(couch_baseurl, io_loop=ioloop)
+    s = tornadocouch.Server(baseurl, io_loop=ioloop)
     s.delete('testdatabase', callback=None, errback=delete_errback)
     ioloop.start()
 
-@with_ioloop()
+@with_ioloop
 @with_couchdb
-def test_list_databases(couch_baseurl, tornado_baseurl,
-                              ioloop, application):
+def test_list_databases(baseurl, ioloop):
     def create_first(db):
         s.create('testdb2', callback=create_second)
 
@@ -109,14 +107,13 @@ def test_list_databases(couch_baseurl, tornado_baseurl,
             )
         ioloop.stop()
 
-    s = tornadocouch.Server(couch_baseurl, io_loop=ioloop)
+    s = tornadocouch.Server(baseurl, io_loop=ioloop)
     s.create('testdb1', callback=create_first)
     ioloop.start()
 
-@with_ioloop()
+@with_ioloop
 @with_couchdb
-def test_create_document(couch_baseurl, tornado_baseurl,
-                         ioloop, application):
+def test_create_document(baseurl, ioloop):
     def create_db_callback(db):
         db.create(
             {'testvalue': 'something'},
@@ -131,14 +128,13 @@ def test_create_document(couch_baseurl, tornado_baseurl,
         eq(doc['testvalue'], 'something')
         ioloop.stop()
 
-    s = tornadocouch.Server(couch_baseurl, io_loop=ioloop)
+    s = tornadocouch.Server(baseurl, io_loop=ioloop)
     s.create('testdb', callback=create_db_callback)
     ioloop.start()
 
-@with_ioloop()
+@with_ioloop
 @with_couchdb
-def test_load_document(couch_baseurl, tornado_baseurl,
-                         ioloop, application):
+def test_load_document(baseurl, ioloop):
     def create_db_callback(db):
         db.create(
             {'testvalue': 'something'},
@@ -156,14 +152,13 @@ def test_load_document(couch_baseurl, tornado_baseurl,
         eq(doc['testvalue'], 'something')
         ioloop.stop()
 
-    s = tornadocouch.Server(couch_baseurl, io_loop=ioloop)
+    s = tornadocouch.Server(baseurl, io_loop=ioloop)
     s.create('testdb', callback=create_db_callback)
     ioloop.start()
 
-@with_ioloop()
+@with_ioloop
 @with_couchdb
-def test_create_document_custom_id(couch_baseurl, tornado_baseurl,
-                                   ioloop, application):
+def test_create_document_custom_id(baseurl, ioloop):
     def create_db_callback(db):
         db.create(
             {'testvalue': 'something'},
@@ -180,7 +175,7 @@ def test_create_document_custom_id(couch_baseurl, tornado_baseurl,
 
         eq(doc['testvalue'], 'something')
 
-        f = urllib.urlopen('%stestdb/testid' % couch_baseurl)
+        f = urllib.urlopen('%stestdb/testid' % baseurl)
         eq(json.load(f),
            {'_id': 'testid',
             '_rev': doc.rev,
@@ -188,14 +183,13 @@ def test_create_document_custom_id(couch_baseurl, tornado_baseurl,
             })
         ioloop.stop()
 
-    s = tornadocouch.Server(couch_baseurl, io_loop=ioloop)
+    s = tornadocouch.Server(baseurl, io_loop=ioloop)
     s.create('testdb', callback=create_db_callback)
     ioloop.start()
 
-@with_ioloop()
+@with_ioloop
 @with_couchdb
-def test_create_document_custom_id_exists(couch_baseurl, tornado_baseurl,
-                                   ioloop, application):
+def test_create_document_custom_id_exists(baseurl, ioloop):
     def create_db_callback(db):
         db.create(
             {'testvalue': 'something'},
@@ -215,15 +209,14 @@ def test_create_document_custom_id_exists(couch_baseurl, tornado_baseurl,
         eq(msg, 'Document update conflict.')
         ioloop.stop()
 
-    s = tornadocouch.Server(couch_baseurl, io_loop=ioloop)
+    s = tornadocouch.Server(baseurl, io_loop=ioloop)
     s.create('testdb', callback=create_db_callback)
     ioloop.start()
 
 
-@with_ioloop()
+@with_ioloop
 @with_couchdb
-def test_load_document_does_not_exist(couch_baseurl, tornado_baseurl,
-                                      ioloop, application):
+def test_load_document_does_not_exist(baseurl, ioloop):
     def create_db_callback(db):
         db.load('foo', callback=None, errback=load_errback)
 
@@ -232,13 +225,13 @@ def test_load_document_does_not_exist(couch_baseurl, tornado_baseurl,
         eq(msg, 'missing')
         ioloop.stop()
 
-    s = tornadocouch.Server(couch_baseurl, io_loop=ioloop)
+    s = tornadocouch.Server(baseurl, io_loop=ioloop)
     s.create('testdb', callback=create_db_callback)
     ioloop.start()
 
-@with_ioloop()
+@with_ioloop
 @with_couchdb
-def test_save_attachment(couch_baseurl, tornado_baseurl, ioloop, application):
+def test_save_attachment(baseurl, ioloop):
     def create_db_callback(db):
         db.create(
             {'testvalue': 'something'},
@@ -251,20 +244,20 @@ def test_save_attachment(couch_baseurl, tornado_baseurl, ioloop, application):
         doc.attach('foobar', data, callback=data_callback)
 
     def data_callback(doc):
-        f = urllib.urlopen('%stestdb/testid/foobar' % couch_baseurl)
+        f = urllib.urlopen('%stestdb/testid/foobar' % baseurl)
         eq(f.read(), 'some textual data')
         ioloop.stop()
 
 
 
-    s = tornadocouch.Server(couch_baseurl, io_loop=ioloop)
+    s = tornadocouch.Server(baseurl, io_loop=ioloop)
     s.create('testdb', callback=create_db_callback)
     ioloop.start()
 
 
-@with_ioloop()
+@with_ioloop
 @with_couchdb
-def test_save_attachment(couch_baseurl, tornado_baseurl, ioloop, application):
+def test_save_attachment(baseurl, ioloop):
     def create_db_callback(db):
         db.create(
             {'testvalue': 'something'},
@@ -277,19 +270,19 @@ def test_save_attachment(couch_baseurl, tornado_baseurl, ioloop, application):
         doc.attach('foobar', data, callback=data_callback)
 
     def data_callback(doc):
-        f = urllib.urlopen('%stestdb/testid/foobar' % couch_baseurl)
+        f = urllib.urlopen('%stestdb/testid/foobar' % baseurl)
         eq(f.read(), 'some textual data')
         ioloop.stop()
 
 
 
-    s = tornadocouch.Server(couch_baseurl, io_loop=ioloop)
+    s = tornadocouch.Server(baseurl, io_loop=ioloop)
     s.create('testdb', callback=create_db_callback)
     ioloop.start()
 
-@with_ioloop()
+@with_ioloop
 @with_couchdb
-def test_load_attachment(couch_baseurl, tornado_baseurl, ioloop, application):
+def test_load_attachment(baseurl, ioloop):
     def create_db_callback(db):
         db.create(
             {'testvalue': 'something'},
@@ -308,14 +301,13 @@ def test_load_attachment(couch_baseurl, tornado_baseurl, ioloop, application):
         eq(data, 'some textual data')
         ioloop.stop()
 
-    s = tornadocouch.Server(couch_baseurl, io_loop=ioloop)
+    s = tornadocouch.Server(baseurl, io_loop=ioloop)
     s.create('testdb', callback=create_db_callback)
     ioloop.start()
 
-@with_ioloop()
+@with_ioloop
 @with_couchdb
-def test_delete_attachment(couch_baseurl, tornado_baseurl,
-                           ioloop, application):
+def test_delete_attachment(baseurl, ioloop):
     def create_db_callback(db):
         db.create(
             {'testvalue': 'something'},
@@ -331,11 +323,11 @@ def test_delete_attachment(couch_baseurl, tornado_baseurl,
         doc.delete_attachment('foobar', callback=delete_callback)
 
     def delete_callback(doc):
-        f = urllib.urlopen('%stestdb/testid/foobar' % couch_baseurl)
+        f = urllib.urlopen('%stestdb/testid/foobar' % baseurl)
         eq(f.getcode(), 404)
         ioloop.stop()
 
-    s = tornadocouch.Server(couch_baseurl, io_loop=ioloop)
+    s = tornadocouch.Server(baseurl, io_loop=ioloop)
     s.create('testdb', callback=create_db_callback)
     ioloop.start()
 

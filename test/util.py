@@ -7,8 +7,6 @@ import nose.tools
 
 from tornado.httpserver import HTTPServer
 from tornado.ioloop import IOLoop
-from inoi.connectivity.server import Application
-
 
 def unrandom(random=None):
     # Make os.urandom not so random. If user wants, a custom random
@@ -28,36 +26,19 @@ def unrandom(random=None):
         return wrap_urandom
     return outer
 
-def with_ioloop(ip='127.0.0.1'):
-    def outer(func):
-        @nose.tools.make_decorator(func)
-        def wrapper(*args, **kwargs):
-            # Chosen by fair dice roll. Guaranteed to be random.
-            port = 8991
+def with_ioloop(func):
+    @nose.tools.make_decorator(func)
+    def wrapper(*args, **kwargs):
+        ioloop = IOLoop()
 
-            statedir = maketemp()
+        # Override ioloop's _run_callback to let all exceptions through
+        def run_callback(self, callback):
+            callback()
+        ioloop._run_callback = new.instancemethod(run_callback, ioloop)
 
-            ioloop = IOLoop()
-            application = Application(ip, statedir)
+        return func(ioloop, *args, **kwargs)
 
-            http_server = HTTPServer(application, io_loop=ioloop)
-            http_server.listen(port)
-
-            # Override ioloop's _run_callback to let all exceptions through
-            def run_callback(self, callback):
-                callback()
-            ioloop._run_callback = new.instancemethod(run_callback, ioloop)
-
-            baseurl = 'http://localhost:%d' % port
-            try:
-                return func(baseurl, ioloop, application, *args, **kwargs)
-            finally:
-                # Close the HTTP server socket so that the address can
-                # be reused
-                http_server._socket.close()
-
-        return wrapper
-    return outer
+    return wrapper
 
 def mkdir(*a, **kw):
     try:
