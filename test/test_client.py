@@ -113,6 +113,48 @@ def test_list_databases(baseurl, ioloop):
 
 @with_ioloop
 @with_couchdb
+def test_open_database(baseurl, ioloop):
+    s = tornadocouch.Server(baseurl, io_loop=ioloop)
+
+    def create_callback(db):
+        s.load('testdb1', callback=load_callback)
+
+    def load_callback(db):
+        eq(db.name, 'testdb1')
+        eq(db.server, s)
+        ioloop.stop()
+
+    s.create('testdb1', callback=create_callback)
+    ioloop.start()
+
+@with_ioloop
+@with_couchdb
+def test_open_nonexisting_database(baseurl, ioloop):
+    s = tornadocouch.Server(baseurl, io_loop=ioloop)
+
+    def load_errback(errno, msg):
+        eq(errno, tornadocouch.errors.NOT_FOUND)
+        eq(msg, "Database not found: 'testdb1'")
+        ioloop.stop()
+
+    s.load('testdb1', callback=None, errback=load_errback)
+    ioloop.start()
+
+@with_ioloop
+@with_couchdb
+def test_open_database_bad_name(baseurl, ioloop):
+    s = tornadocouch.Server(baseurl, io_loop=ioloop)
+
+    def load_errback(errno, msg):
+        eq(errno, tornadocouch.errors.INVALID_DATABASE_NAME)
+        eq(msg, "Invalid database name: 'not a valid name'")
+        ioloop.stop()
+
+    s.load('not a valid name', callback=None, errback=load_errback)
+    ioloop.start()
+
+@with_ioloop
+@with_couchdb
 def test_create_document(baseurl, ioloop):
     def create_db_callback(db):
         db.create(

@@ -19,15 +19,18 @@ class Server(object):
     def default_errback(self, error, msg):
         raise ValueError(msg)
 
+    def _invalid_db_name(self, name, errback):
+        errback(
+            tornadocouch.errors.INVALID_DATABASE_NAME,
+            'Invalid database name: %r' % name,
+            )
+
     def create(self, name, callback, errback=None):
         errback = errback or self.default_errback
 
         if not VALID_DB_NAME.match(name):
             # Avoid additional HTTP Query by doing the check here
-            errback(
-                tornadocouch.errors.INVALID_DATABASE_NAME,
-                'Invalid database name: %r' % name,
-                )
+            self._invalid_db_name(name, errback)
             return
 
         def _create_callback(response):
@@ -51,6 +54,24 @@ class Server(object):
             body='',
             )
 
+    def load(self, name, callback, errback=None):
+        errback = errback or self.default_errback
+        if not VALID_DB_NAME.match(name):
+            return self._invalid_db_name(name, errback)
+
+        def _really_callback(response):
+            if response.code == 200:
+                callback(Database(self, name))
+            elif response.code == 404:
+                return errback(
+                    tornadocouch.errors.NOT_FOUND,
+                    'Database not found: %r' % name
+                    )
+
+        self.client.fetch(
+            '%s/%s' % (self.baseurl, name),
+            _really_callback,
+            )
     def delete(self, name, callback, errback=None):
         errback = errback or self.default_errback
 
