@@ -176,6 +176,29 @@ def test_create_document(baseurl, ioloop):
 
 @with_ioloop
 @with_couchdb
+def test_create_document_with_slash(baseurl, ioloop):
+    def create_db_callback(db):
+        db.create(
+            {'testvalue': 'something'},
+            callback=create_doc_callback,
+            doc_id='something/with/slash',
+            )
+
+    def create_doc_callback(doc):
+        assert isinstance(doc, tornadocouch.Document)
+        assert doc.id
+        assert doc.rev
+
+        eq(doc.id, 'something/with/slash')
+        eq(doc['testvalue'], 'something')
+        ioloop.stop()
+
+    s = tornadocouch.Server(baseurl, io_loop=ioloop)
+    s.create('testdb', callback=create_db_callback)
+    ioloop.start()
+
+@with_ioloop
+@with_couchdb
 def test_load_document(baseurl, ioloop):
     def create_db_callback(db):
         db.create(

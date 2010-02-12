@@ -1,5 +1,6 @@
 # Asynchronous CouchDB client
 import re
+import urllib
 import tornado.httpclient
 try:
     import json
@@ -109,7 +110,10 @@ class Database(object):
 
     def create(self, data, callback, doc_id=None, errback=None):
         def _really_callback(response):
-            content = json.loads(response.body)
+            try:
+                content = json.loads(response.body)
+            except ValueError:
+                content = response.body
             if response.code == 201:
                 doc = Document(
                     self,
@@ -123,9 +127,13 @@ class Database(object):
                     tornadocouch.errors.CONFLICT,
                     content['reason']
                     )
+            else:
+                errback(tornadocouch.errors.SERVER_ERROR,
+                        response.body)
 
         url = '%s/%s' % (self.server.baseurl, self.name)
         if doc_id is not None:
+            doc_id = urllib.quote(doc_id, safe='')
             url = '%s/%s' % (url, doc_id)
             method = 'PUT'
         else:
@@ -149,6 +157,7 @@ class Database(object):
             elif response.code == 404:
                 errback(tornadocouch.errors.NOT_FOUND, data['reason'])
 
+        doc_id = urllib.quote(doc_id, safe='')
         self.server.client.fetch(
             '%s/%s/%s' % (self.server.baseurl, self.name, doc_id),
             _really_callback,
