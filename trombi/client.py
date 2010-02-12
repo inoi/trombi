@@ -7,7 +7,7 @@ try:
 except ImportError:
     import simplejson as json
 
-import tornadocouch.errors
+import trombi.errors
 
 class Server(object):
     def __init__(self, baseurl, io_loop=None):
@@ -22,7 +22,7 @@ class Server(object):
 
     def _invalid_db_name(self, name, errback):
         errback(
-            tornadocouch.errors.INVALID_DATABASE_NAME,
+            trombi.errors.INVALID_DATABASE_NAME,
             'Invalid database name: %r' % name,
             )
 
@@ -39,7 +39,7 @@ class Server(object):
                 callback(Database(self, name))
             elif response.code == 412:
                 errback(
-                    tornadocouch.errors.PRECONDITION_FAILED,
+                    trombi.errors.PRECONDITION_FAILED,
                     'Database already exists: %r' % name
                     )
             else:
@@ -65,7 +65,7 @@ class Server(object):
                 callback(Database(self, name))
             elif response.code == 404:
                 return errback(
-                    tornadocouch.errors.NOT_FOUND,
+                    trombi.errors.NOT_FOUND,
                     'Database not found: %r' % name
                     )
 
@@ -80,7 +80,7 @@ class Server(object):
             if response.code == 200:
                 callback()
             elif response.code == 404:
-                errback(tornadocouch.errors.NOT_FOUND,
+                errback(trombi.errors.NOT_FOUND,
                         'Database does not exist: %r' % name)
 
         self.client.fetch(
@@ -124,11 +124,11 @@ class Database(object):
                 callback(doc)
             elif response.code == 409:
                 errback(
-                    tornadocouch.errors.CONFLICT,
+                    trombi.errors.CONFLICT,
                     content['reason']
                     )
             else:
-                errback(tornadocouch.errors.SERVER_ERROR,
+                errback(trombi.errors.SERVER_ERROR,
                         response.body)
 
         url = '%s/%s' % (self.server.baseurl, self.name)
@@ -155,7 +155,7 @@ class Database(object):
                 doc = Document(self, data.items())
                 callback(doc)
             elif response.code == 404:
-                errback(tornadocouch.errors.NOT_FOUND, data['reason'])
+                errback(trombi.errors.NOT_FOUND, data['reason'])
 
         doc_id = urllib.quote(doc_id, safe='')
         self.server.client.fetch(
