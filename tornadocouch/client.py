@@ -90,7 +90,12 @@ class Database(object):
         def _really_callback(response):
             content = json.loads(response.body)
             if response.code == 201:
-                doc = Document(_id=content['id'], _rev=content['rev'], **data)
+                doc = Document(
+                    self,
+                    data.items(),
+                    _id=content['id'],
+                    _rev=content['rev'],
+                    )
                 callback(doc)
             elif response.code == 409:
                 errback(
@@ -118,7 +123,7 @@ class Database(object):
         def _really_callback(response):
             data = json.loads(response.body)
             if response.code == 200:
-                doc = Document(data.items())
+                doc = Document(self, data.items())
                 callback(doc)
             elif response.code == 404:
                 errback(tornadocouch.errors.NOT_FOUND, data['reason'])
@@ -129,9 +134,63 @@ class Database(object):
             )
 
 class Document(dict):
-    def __init__(self, *a, **kw):
+    def __init__(self, db, *a, **kw):
+        self.db = db
         super(Document, self).__init__(*a, **kw)
         self.id = self.pop('_id')
         self.rev = self.pop('_rev')
+
+    def attach(self, name, data, callback, type='text/plain'):
+        def _really_callback(response):
+            data = json.loads(response.body)
+            assert data['id'] == self.id
+            self.rev = data['rev']
+            callback(self)
+
+        headers = {'Content-Type': type}
+
+        self.db.server.client.fetch(
+            '%s/%s/%s/%s?rev=%s' % (
+                self.db.server.baseurl,
+                self.db.name,
+                self.id,
+                name,
+                self.rev,
+                ),
+            _really_callback,
+            method='PUT',
+            body=data,
+            headers=headers,
+            )
+
+    def load_attachment(self, name, callback):
+        def _really_callback(response):
+            callback(response.body)
+
+        self.db.server.client.fetch(
+            '%s/%s/%s/%s' % (
+                self.db.server.baseurl,
+                self.db.name,
+                self.id,
+                name,
+                ),
+            _really_callback,
+            )
+
+    def delete_attachment(self, name, callback):
+        def _really_callback(response):
+            callback(self)
+
+        self.db.server.client.fetch(
+            '%s/%s/%s/%s?rev=%s' % (
+                self.db.server.baseurl,
+                self.db.name,
+                self.id,
+                name,
+                self.rev,
+                ),
+            _really_callback,
+            method='DELETE',
+            )
 
 VALID_DB_NAME = re.compile(r'^[a-z][a-z0-9_$()+-/]*$')

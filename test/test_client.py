@@ -236,3 +236,106 @@ def test_load_document_does_not_exist(couch_baseurl, tornado_baseurl,
     s.create('testdb', callback=create_db_callback)
     ioloop.start()
 
+@with_ioloop()
+@with_couchdb
+def test_save_attachment(couch_baseurl, tornado_baseurl, ioloop, application):
+    def create_db_callback(db):
+        db.create(
+            {'testvalue': 'something'},
+            callback=create_doc_callback,
+            doc_id='testid',
+            )
+
+    def create_doc_callback(doc):
+        data = 'some textual data'
+        doc.attach('foobar', data, callback=data_callback)
+
+    def data_callback(doc):
+        f = urllib.urlopen('%stestdb/testid/foobar' % couch_baseurl)
+        eq(f.read(), 'some textual data')
+        ioloop.stop()
+
+
+
+    s = tornadocouch.Server(couch_baseurl, io_loop=ioloop)
+    s.create('testdb', callback=create_db_callback)
+    ioloop.start()
+
+
+@with_ioloop()
+@with_couchdb
+def test_save_attachment(couch_baseurl, tornado_baseurl, ioloop, application):
+    def create_db_callback(db):
+        db.create(
+            {'testvalue': 'something'},
+            callback=create_doc_callback,
+            doc_id='testid',
+            )
+
+    def create_doc_callback(doc):
+        data = 'some textual data'
+        doc.attach('foobar', data, callback=data_callback)
+
+    def data_callback(doc):
+        f = urllib.urlopen('%stestdb/testid/foobar' % couch_baseurl)
+        eq(f.read(), 'some textual data')
+        ioloop.stop()
+
+
+
+    s = tornadocouch.Server(couch_baseurl, io_loop=ioloop)
+    s.create('testdb', callback=create_db_callback)
+    ioloop.start()
+
+@with_ioloop()
+@with_couchdb
+def test_load_attachment(couch_baseurl, tornado_baseurl, ioloop, application):
+    def create_db_callback(db):
+        db.create(
+            {'testvalue': 'something'},
+            callback=create_doc_callback,
+            doc_id='testid',
+            )
+
+    def create_doc_callback(doc):
+        data = 'some textual data'
+        doc.attach('foobar', data, callback=attach_callback)
+
+    def attach_callback(doc):
+        doc.load_attachment('foobar', callback=data_callback)
+
+    def data_callback(data):
+        eq(data, 'some textual data')
+        ioloop.stop()
+
+    s = tornadocouch.Server(couch_baseurl, io_loop=ioloop)
+    s.create('testdb', callback=create_db_callback)
+    ioloop.start()
+
+@with_ioloop()
+@with_couchdb
+def test_delete_attachment(couch_baseurl, tornado_baseurl,
+                           ioloop, application):
+    def create_db_callback(db):
+        db.create(
+            {'testvalue': 'something'},
+            callback=create_doc_callback,
+            doc_id='testid',
+            )
+
+    def create_doc_callback(doc):
+        data = 'some textual data'
+        doc.attach('foobar', data, callback=attach_callback)
+
+    def attach_callback(doc):
+        doc.delete_attachment('foobar', callback=delete_callback)
+
+    def delete_callback(doc):
+        f = urllib.urlopen('%stestdb/testid/foobar' % couch_baseurl)
+        eq(f.getcode(), 404)
+        ioloop.stop()
+
+    s = tornadocouch.Server(couch_baseurl, io_loop=ioloop)
+    s.create('testdb', callback=create_db_callback)
+    ioloop.start()
+
