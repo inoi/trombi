@@ -163,6 +163,35 @@ class Database(object):
             _really_callback,
             )
 
+    def delete(self, doc, callback, errback=None):
+        errback = errback or self.server.default_errback
+
+        def _really_callback(response):
+            try:
+                data = json.loads(response.body)
+            except ValueError:
+                data = response.body
+
+            if response.code == 200:
+                callback(self)
+            elif response.code == 404:
+                errback(trombi.errors.NOT_FOUND, data['reason'])
+            elif response.code == 409:
+                errback(trombi.errors.CONFLICT, data['reason'])
+            else:
+                print response.code
+                errback(trombi.errors.SERVER_ERROR, data)
+
+        doc_id = urllib.quote(doc.id, safe='')
+        self.server.client.fetch(
+            '%s/%s/%s?rev=%s' % (
+                self.server.baseurl, self.name, doc_id, doc.rev
+                ),
+            _really_callback,
+            method='DELETE',
+            )
+
+
 class Document(dict):
     def __init__(self, db, *a, **kw):
         self.db = db

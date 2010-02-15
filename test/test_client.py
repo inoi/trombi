@@ -254,6 +254,76 @@ def test_create_document_custom_id(baseurl, ioloop):
 
 @with_ioloop
 @with_couchdb
+def test_delete_document(baseurl, ioloop):
+    def create_db_callback(db):
+        db.create(
+            {'testvalue': 'something'},
+            callback=functools.partial(create_doc_callback, db),
+            doc_id='testid'
+            )
+
+    def create_doc_callback(db, doc):
+        db.delete(doc, callback=delete_doc_callback)
+
+    def delete_doc_callback(db):
+        assert isinstance(db, trombi.Database)
+        ioloop.stop()
+
+        f = urllib.urlopen('%stestdb/testid' % baseurl)
+        eq(f.getcode(), 404)
+
+    s = trombi.Server(baseurl, io_loop=ioloop)
+    s.create('testdb', callback=create_db_callback)
+    ioloop.start()
+
+@with_ioloop
+@with_couchdb
+def test_delete_document_not_existing(baseurl, ioloop):
+    def create_db_callback(db):
+        db.create(
+            {'testvalue': 'something'},
+            callback=functools.partial(create_doc_callback, db),
+            doc_id='testid'
+            )
+
+    def create_doc_callback(db, doc):
+        doc.id = 'wrongid'
+        db.delete(doc, callback=None, errback=delete_doc_errback)
+
+    def delete_doc_errback(errno, msg):
+        eq(errno, trombi.errors.NOT_FOUND)
+        eq(msg, 'missing')
+        ioloop.stop()
+
+    s = trombi.Server(baseurl, io_loop=ioloop)
+    s.create('testdb', callback=create_db_callback)
+    ioloop.start()
+
+
+@with_ioloop
+@with_couchdb
+def test_delete_document_wrong_rev(baseurl, ioloop):
+    def create_db_callback(db):
+        db.create(
+            {'testvalue': 'something'},
+            callback=functools.partial(create_doc_callback, db),
+            doc_id='testid'
+            )
+
+    def create_doc_callback(db, doc):
+        doc.rev = 'wrong'
+        db.delete(doc, callback=None, errback=delete_doc_errback)
+
+    def delete_doc_errback(errno, msg):
+        eq(errno, trombi.errors.SERVER_ERROR)
+        ioloop.stop()
+
+    s = trombi.Server(baseurl, io_loop=ioloop)
+    s.create('testdb', callback=create_db_callback)
+    ioloop.start()
+
+@with_ioloop
+@with_couchdb
 def test_create_document_custom_id_exists(baseurl, ioloop):
     def create_db_callback(db):
         db.create(
