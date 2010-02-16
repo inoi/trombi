@@ -102,8 +102,8 @@ def test_list_databases(baseurl, ioloop):
         databases = list(databases)
         assert all(isinstance(x, trombi.Database) for x in databases)
         eq(
-            ['testdb2', 'testdb1'],
-            [x.name for x in databases],
+            set(['testdb2', 'testdb1']),
+            set([x.name for x in databases]),
             )
         ioloop.stop()
 
