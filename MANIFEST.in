@@ -1,0 +1,2 @@
+recursive-include trombi *.py
+recursive-include test *.py

@@ -1,2 +1,5 @@
 tmp
 *.py[co]
+/MANIFEST
+/build
+/dist
