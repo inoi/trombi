@@ -44,7 +44,7 @@ class Server(object):
                     )
             else:
                 response.code(
-                    funrniture.errors.GENERIC,
+                    trombi.errors.GENERIC,
                     response.body,
                     )
 
