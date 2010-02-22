@@ -475,3 +475,120 @@ def test_delete_attachment(baseurl, ioloop):
     s.create('testdb', callback=create_db_callback)
     ioloop.start()
 
+@with_ioloop
+@with_couchdb
+def test_load_view_empty_results(baseurl, ioloop):
+    def create_db_callback(db):
+        def create_view_callback(response):
+            eq(response.code, 201)
+            db.view('testview', 'all', load_view_cb)
+
+        db.server.client.fetch(
+            '%stestdb/_design/testview' % baseurl,
+            create_view_callback,
+            method='PUT',
+            body=json.dumps(
+                {
+                    'language': 'javascript',
+                    'views': {
+                        'all': {
+                            'map': 'function (doc) { emit(null, doc) }',
+                            }
+                        }
+                    }
+                )
+            )
+
+    def load_view_cb(result):
+        assert isinstance(result, list)
+        eq(result, [])
+        ioloop.stop()
+
+    s = trombi.Server(baseurl, io_loop=ioloop)
+    s.create('testdb', callback=create_db_callback)
+    ioloop.start()
+
+
+@with_ioloop
+@with_couchdb
+def test_load_view_with_results(baseurl, ioloop):
+    def create_db_callback(db):
+        def create_doc_cb(doc):
+            db.view('testview', 'all', load_view_cb)
+
+        def create_view_callback(response):
+            eq(response.code, 201)
+            db.create({'data': 'data'}, create_doc_cb)
+
+        db.server.client.fetch(
+            '%stestdb/_design/testview' % baseurl,
+            create_view_callback,
+            method='PUT',
+            body=json.dumps(
+                {
+                    'language': 'javascript',
+                    'views': {
+                        'all': {
+                            'map': 'function (doc) { emit(null, doc) }',
+                            }
+                        }
+                    }
+                )
+            )
+
+    def load_view_cb(result):
+        assert isinstance(result, list)
+        eq(len(result), 1)
+        result[0]['value'].pop('_rev')
+        result[0]['value'].pop('_id')
+        result[0].pop('id')
+        eq(result, [{'value': {'data': 'data'}, 'key': None}])
+        ioloop.stop()
+
+    s = trombi.Server(baseurl, io_loop=ioloop)
+    s.create('testdb', callback=create_db_callback)
+    ioloop.start()
+
+@with_ioloop
+@with_couchdb
+def test_load_view_with_grouping_reduce(baseurl, ioloop):
+    def create_db_callback(db):
+        times = 0
+        def create_doc_cb(doc):
+            if doc['data'] == 'other':
+                db.view('testview', 'all', load_view_cb, group='true')
+            else:
+                db.create({'data': 'other'}, create_doc_cb)
+
+        def create_view_callback(response):
+            eq(response.code, 201)
+            db.create({'data': 'data'}, create_doc_cb)
+
+        db.server.client.fetch(
+            '%stestdb/_design/testview' % baseurl,
+            create_view_callback,
+            method='PUT',
+            body=json.dumps(
+                {
+                    'language': 'javascript',
+                    'views': {
+                        'all': {
+                            'map': 'function (doc) { emit(doc.data, doc) }',
+                            'reduce': 'function (key, value) { return \
+                                       value.length }',
+                            }
+                        }
+                    }
+                )
+            )
+
+    def load_view_cb(result):
+        assert isinstance(result, list)
+        eq(result, [{'value': 1, 'key': 'data'},
+                    {'value': 1, 'key': 'other'}])
+        ioloop.stop()
+
+    s = trombi.Server(baseurl, io_loop=ioloop)
+    s.create('testdb', callback=create_db_callback)
+    ioloop.start()
+

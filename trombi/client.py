@@ -156,7 +156,7 @@ class Database(object):
             url = ''
             method = 'POST'
 
-        self.server.client.fetch(
+        self._fetch(
             url,
             _really_callback,
             method=method,
@@ -175,15 +175,22 @@ class Database(object):
                 errback(trombi.errors.NOT_FOUND, data['reason'])
 
         doc_id = urllib.quote(doc_id, safe='')
-<<<<<<< HEAD
-        self.server.client.fetch(
-            '%s/%s/%s' % (self.server.baseurl, self.name, doc_id),
-=======
+
         self._fetch(
             doc_id,
->>>>>>> ee4fbab... database: Provide a convenience wrapper _fetch for http queries
             _really_callback,
             )
+
+    def view(self, design_doc, viewname, callback, **kwargs):
+        def _really_callback(response):
+            print response.body
+            callback(json.loads(response.body)['rows'])
+
+        url = '_design/%s/_view/%s' % (design_doc, viewname)
+        if kwargs:
+            url = '%s?%s' % (url, urllib.urlencode(kwargs))
+
+        self._fetch(url, _really_callback)
 
     def delete(self, doc, callback, errback=None):
         errback = errback or self.server.default_errback
@@ -205,15 +212,8 @@ class Database(object):
                 errback(trombi.errors.SERVER_ERROR, data)
 
         doc_id = urllib.quote(doc.id, safe='')
-<<<<<<< HEAD
-        self.server.client.fetch(
-            '%s/%s/%s?rev=%s' % (
-                self.server.baseurl, self.name, doc_id, doc.rev
-                ),
-=======
         self._fetch(
             '%s?rev=%s' % (doc_id, doc.rev),
->>>>>>> ee4fbab... database: Provide a convenience wrapper _fetch for http queries
             _really_callback,
             method='DELETE',
             )
