@@ -116,6 +116,15 @@ class Database(object):
     def __init__(self, server, name=None):
         self.server = server
         self.name = name
+        self.baseurl = '%s/%s' % (self.server.baseurl, self.name)
+
+    def _fetch(self, url, *args, **kwargs):
+        # Just a convenience wrapper
+        if 'baseurl' in kwargs:
+            url = '%s/%s' % (kwargs.pop('baseurl'), url)
+        else:
+            url = '%s/%s' % (self.baseurl, url)
+        return self.server.client.fetch(url, *args, **kwargs)
 
     def create(self, data, callback, doc_id=None, errback=None):
         def _really_callback(response):
@@ -140,12 +149,11 @@ class Database(object):
                 errback(trombi.errors.SERVER_ERROR,
                         response.body)
 
-        url = '%s/%s' % (self.server.baseurl, self.name)
         if doc_id is not None:
-            doc_id = urllib.quote(doc_id, safe='')
-            url = '%s/%s' % (url, doc_id)
+            url = urllib.quote(doc_id, safe='')
             method = 'PUT'
         else:
+            url = ''
             method = 'POST'
 
         self.server.client.fetch(
@@ -167,8 +175,13 @@ class Database(object):
                 errback(trombi.errors.NOT_FOUND, data['reason'])
 
         doc_id = urllib.quote(doc_id, safe='')
+<<<<<<< HEAD
         self.server.client.fetch(
             '%s/%s/%s' % (self.server.baseurl, self.name, doc_id),
+=======
+        self._fetch(
+            doc_id,
+>>>>>>> ee4fbab... database: Provide a convenience wrapper _fetch for http queries
             _really_callback,
             )
 
@@ -192,10 +205,15 @@ class Database(object):
                 errback(trombi.errors.SERVER_ERROR, data)
 
         doc_id = urllib.quote(doc.id, safe='')
+<<<<<<< HEAD
         self.server.client.fetch(
             '%s/%s/%s?rev=%s' % (
                 self.server.baseurl, self.name, doc_id, doc.rev
                 ),
+=======
+        self._fetch(
+            '%s?rev=%s' % (doc_id, doc.rev),
+>>>>>>> ee4fbab... database: Provide a convenience wrapper _fetch for http queries
             _really_callback,
             method='DELETE',
             )
@@ -217,14 +235,8 @@ class Document(dict):
 
         headers = {'Content-Type': type}
 
-        self.db.server.client.fetch(
-            '%s/%s/%s/%s?rev=%s' % (
-                self.db.server.baseurl,
-                self.db.name,
-                self.id,
-                name,
-                self.rev,
-                ),
+        self.db._fetch(
+            '%s/%s?rev=%s' % (self.id, name, self.rev),
             _really_callback,
             method='PUT',
             body=data,
@@ -235,13 +247,8 @@ class Document(dict):
         def _really_callback(response):
             callback(response.body)
 
-        self.db.server.client.fetch(
-            '%s/%s/%s/%s' % (
-                self.db.server.baseurl,
-                self.db.name,
-                self.id,
-                name,
-                ),
+        self.db._fetch(
+            '%s/%s' % (self.id, name),
             _really_callback,
             )
 
@@ -249,14 +256,8 @@ class Document(dict):
         def _really_callback(response):
             callback(self)
 
-        self.db.server.client.fetch(
-            '%s/%s/%s/%s?rev=%s' % (
-                self.db.server.baseurl,
-                self.db.name,
-                self.id,
-                name,
-                self.rev,
-                ),
+        self.db._fetch(
+            '%s/%s?rev=%s' % (self.id, name, self.rev),
             _really_callback,
             method='DELETE',
             )
