@@ -182,9 +182,15 @@ class Database(object):
             )
 
     def view(self, design_doc, viewname, callback, **kwargs):
+        errback = kwargs.pop('errback', None) or self.server.default_errback
         def _really_callback(response):
-            print response.body
-            callback(json.loads(response.body)['rows'])
+            if response.code == 200:
+                callback(json.loads(response.body)['rows'])
+            elif response.code == 404:
+                errback(trombi.errors.NOT_FOUND,
+                         json.loads(response.body)['reason'])
+            else:
+                errback(trombi.errors.GENERAL, response.body)
 
         url = '_design/%s/_view/%s' % (design_doc, viewname)
         if kwargs:

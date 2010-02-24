@@ -592,3 +592,52 @@ def test_load_view_with_grouping_reduce(baseurl, ioloop):
     s.create('testdb', callback=create_db_callback)
     ioloop.start()
 
+@with_ioloop
+@with_couchdb
+def test_load_view_no_design_doc(baseurl, ioloop):
+    def create_db_callback(db):
+        def load_view_eb(errno, msg):
+            eq(errno, trombi.errors.NOT_FOUND)
+            eq(msg, 'missing')
+            ioloop.stop()
+        db.view('testview', 'all', None, errback=load_view_eb, group='true')
+
+
+    s = trombi.Server(baseurl, io_loop=ioloop)
+    s.create('testdb', callback=create_db_callback)
+    ioloop.start()
+
+
+@with_ioloop
+@with_couchdb
+def test_load_view_no_such_view(baseurl, ioloop):
+    def create_db_callback(db):
+        def create_view_callback(useless):
+            db.view('testview', 'all', None, errback=load_view_eb)
+
+        db.server.client.fetch(
+            '%stestdb/_design/testview' % baseurl,
+            create_view_callback,
+            method='PUT',
+            body=json.dumps(
+                {
+                    'language': 'javascript',
+                    'views': {
+                        'foobar': {
+                            'map': 'function (doc) { emit(doc.data, doc) }',
+                            'reduce': 'function (key, value) { return \
+                                       value.length }',
+                            }
+                        }
+                    }
+                )
+            )
+    def load_view_eb(errno, msg):
+        eq(errno, trombi.errors.NOT_FOUND)
+        eq(msg, 'missing_named_view')
+        ioloop.stop()
+
+    s = trombi.Server(baseurl, io_loop=ioloop)
+    s.create('testdb', callback=create_db_callback)
+    ioloop.start()
+
