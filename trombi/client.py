@@ -52,8 +52,8 @@ class Server(object):
                     'Database already exists: %r' % name
                     )
             else:
-                response.code(
-                    trombi.errors.GENERIC,
+                errback(
+                    response.code,
                     response.body,
                     )
 
@@ -190,7 +190,7 @@ class Database(object):
                 errback(trombi.errors.NOT_FOUND,
                          json.loads(response.body)['reason'])
             else:
-                errback(trombi.errors.GENERAL, response.body)
+                errback(trombi.errors.SERVER_ERROR, response.body)
 
         url = '_design/%s/_view/%s' % (design_doc, viewname)
         if kwargs:
