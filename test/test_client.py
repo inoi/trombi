@@ -126,9 +126,9 @@ def test_open_database(baseurl, ioloop):
     s = trombi.Server(baseurl, io_loop=ioloop)
 
     def create_callback(db):
-        s.load('testdb1', callback=load_callback)
+        s.get('testdb1', callback=get_callback)
 
-    def load_callback(db):
+    def get_callback(db):
         eq(db.name, 'testdb1')
         eq(db.server, s)
         ioloop.stop()
@@ -141,12 +141,12 @@ def test_open_database(baseurl, ioloop):
 def test_open_nonexisting_database(baseurl, ioloop):
     s = trombi.Server(baseurl, io_loop=ioloop)
 
-    def load_errback(errno, msg):
+    def get_errback(errno, msg):
         eq(errno, trombi.errors.NOT_FOUND)
         eq(msg, "Database not found: 'testdb1'")
         ioloop.stop()
 
-    s.load('testdb1', callback=None, errback=load_errback)
+    s.get('testdb1', callback=None, errback=get_errback)
     ioloop.start()
 
 @with_ioloop
@@ -154,19 +154,19 @@ def test_open_nonexisting_database(baseurl, ioloop):
 def test_open_database_bad_name(baseurl, ioloop):
     s = trombi.Server(baseurl, io_loop=ioloop)
 
-    def load_errback(errno, msg):
+    def get_errback(errno, msg):
         eq(errno, trombi.errors.INVALID_DATABASE_NAME)
         eq(msg, "Invalid database name: 'not a valid name'")
         ioloop.stop()
 
-    s.load('not a valid name', callback=None, errback=load_errback)
+    s.get('not a valid name', callback=None, errback=get_errback)
     ioloop.start()
 
 @with_ioloop
 @with_couchdb
 def test_create_document(baseurl, ioloop):
     def create_db_callback(db):
-        db.create(
+        db.set(
             {'testvalue': 'something'},
             callback=create_doc_callback,
             )
@@ -187,7 +187,7 @@ def test_create_document(baseurl, ioloop):
 @with_couchdb
 def test_create_document_with_slash(baseurl, ioloop):
     def create_db_callback(db):
-        db.create(
+        db.set(
             {'testvalue': 'something'},
             callback=create_doc_callback,
             doc_id='something/with/slash',
@@ -208,17 +208,17 @@ def test_create_document_with_slash(baseurl, ioloop):
 
 @with_ioloop
 @with_couchdb
-def test_load_document(baseurl, ioloop):
+def test_get_document(baseurl, ioloop):
     def create_db_callback(db):
-        db.create(
+        db.set(
             {'testvalue': 'something'},
             callback=functools.partial(create_doc_callback, db=db)
             )
 
     def create_doc_callback(doc, db=None):
-        db.load(doc.id, callback=load_doc_callback)
+        db.get(doc.id, callback=get_doc_callback)
 
-    def load_doc_callback(doc):
+    def get_doc_callback(doc):
         assert isinstance(doc, trombi.Document)
         assert doc.id
         assert doc.rev
@@ -234,7 +234,7 @@ def test_load_document(baseurl, ioloop):
 @with_couchdb
 def test_create_document_custom_id(baseurl, ioloop):
     def create_db_callback(db):
-        db.create(
+        db.set(
             {'testvalue': 'something'},
             callback=create_doc_callback,
             doc_id='testid',
@@ -265,7 +265,7 @@ def test_create_document_custom_id(baseurl, ioloop):
 @with_couchdb
 def test_delete_document(baseurl, ioloop):
     def create_db_callback(db):
-        db.create(
+        db.set(
             {'testvalue': 'something'},
             callback=functools.partial(create_doc_callback, db),
             doc_id='testid'
@@ -289,7 +289,7 @@ def test_delete_document(baseurl, ioloop):
 @with_couchdb
 def test_delete_document_not_existing(baseurl, ioloop):
     def create_db_callback(db):
-        db.create(
+        db.set(
             {'testvalue': 'something'},
             callback=functools.partial(create_doc_callback, db),
             doc_id='testid'
@@ -313,7 +313,7 @@ def test_delete_document_not_existing(baseurl, ioloop):
 @with_couchdb
 def test_delete_document_wrong_rev(baseurl, ioloop):
     def create_db_callback(db):
-        db.create(
+        db.set(
             {'testvalue': 'something'},
             callback=functools.partial(create_doc_callback, db),
             doc_id='testid'
@@ -335,20 +335,20 @@ def test_delete_document_wrong_rev(baseurl, ioloop):
 @with_couchdb
 def test_create_document_custom_id_exists(baseurl, ioloop):
     def create_db_callback(db):
-        db.create(
+        db.set(
             {'testvalue': 'something'},
-            callback=functools.partial(create_1st_doc_callback, db=db),
+            callback=functools.partial(create_doc_callback, db=db),
             doc_id='testid',
             )
 
-    def create_1st_doc_callback(doc, db):
-        db.create(
+    def create_doc_callback(doc, db):
+        db.set(
             {'testvalue': 'something'},
             None,
             doc_id='testid',
-            errback=create_doc_error,
+            errback=update_doc_error,
             )
-    def create_doc_error(errno, msg):
+    def update_doc_error(errno, msg):
         eq(errno, trombi.errors.CONFLICT)
         eq(msg, 'Document update conflict.')
         ioloop.stop()
@@ -360,11 +360,11 @@ def test_create_document_custom_id_exists(baseurl, ioloop):
 
 @with_ioloop
 @with_couchdb
-def test_load_document_does_not_exist(baseurl, ioloop):
+def test_get_document_does_not_exist(baseurl, ioloop):
     def create_db_callback(db):
-        db.load('foo', callback=None, errback=load_errback)
+        db.get('foo', callback=None, errback=get_errback)
 
-    def load_errback(errno, msg):
+    def get_errback(errno, msg):
         eq(errno, trombi.errors.NOT_FOUND)
         eq(msg, 'missing')
         ioloop.stop()
@@ -377,7 +377,7 @@ def test_load_document_does_not_exist(baseurl, ioloop):
 @with_couchdb
 def test_save_attachment(baseurl, ioloop):
     def create_db_callback(db):
-        db.create(
+        db.set(
             {'testvalue': 'something'},
             callback=create_doc_callback,
             doc_id='testid',
@@ -403,7 +403,7 @@ def test_save_attachment(baseurl, ioloop):
 @with_couchdb
 def test_save_attachment(baseurl, ioloop):
     def create_db_callback(db):
-        db.create(
+        db.set(
             {'testvalue': 'something'},
             callback=create_doc_callback,
             doc_id='testid',
@@ -428,7 +428,7 @@ def test_save_attachment(baseurl, ioloop):
 @with_couchdb
 def test_load_attachment(baseurl, ioloop):
     def create_db_callback(db):
-        db.create(
+        db.set(
             {'testvalue': 'something'},
             callback=create_doc_callback,
             doc_id='testid',
@@ -453,7 +453,7 @@ def test_load_attachment(baseurl, ioloop):
 @with_couchdb
 def test_delete_attachment(baseurl, ioloop):
     def create_db_callback(db):
-        db.create(
+        db.set(
             {'testvalue': 'something'},
             callback=create_doc_callback,
             doc_id='testid',
@@ -518,7 +518,7 @@ def test_load_view_with_results(baseurl, ioloop):
 
         def create_view_callback(response):
             eq(response.code, 201)
-            db.create({'data': 'data'}, create_doc_cb)
+            db.set({'data': 'data'}, create_doc_cb)
 
         db.server.client.fetch(
             '%stestdb/_design/testview' % baseurl,
@@ -558,11 +558,11 @@ def test_load_view_with_grouping_reduce(baseurl, ioloop):
             if doc['data'] == 'other':
                 db.view('testview', 'all', load_view_cb, group='true')
             else:
-                db.create({'data': 'other'}, create_doc_cb)
+                db.set({'data': 'other'}, create_doc_cb)
 
         def create_view_callback(response):
             eq(response.code, 201)
-            db.create({'data': 'data'}, create_doc_cb)
+            db.set({'data': 'data'}, create_doc_cb)
 
         db.server.client.fetch(
             '%stestdb/_design/testview' % baseurl,

@@ -64,7 +64,7 @@ class Server(object):
             body='',
             )
 
-    def load(self, name, callback, errback=None):
+    def get(self, name, callback, errback=None):
         errback = errback or self.default_errback
         if not VALID_DB_NAME.match(name):
             return self._invalid_db_name(name, errback)
@@ -126,7 +126,7 @@ class Database(object):
             url = '%s/%s' % (self.baseurl, url)
         return self.server.client.fetch(url, *args, **kwargs)
 
-    def create(self, data, callback, doc_id=None, errback=None):
+    def set(self, data, callback, doc_id=None, errback=None):
         def _really_callback(response):
             try:
                 content = json.loads(response.body)
@@ -163,7 +163,7 @@ class Database(object):
             body=json.dumps(data),
             )
 
-    def load(self, doc_id, callback, errback=None):
+    def get(self, doc_id, callback, errback=None):
         errback = errback or self.server.default_errback
 
         def _really_callback(response):
