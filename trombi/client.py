@@ -64,7 +64,7 @@ class Server(object):
             body='',
             )
 
-    def get(self, name, callback, errback=None):
+    def get(self, name, callback, errback=None, create=False):
         errback = errback or self.default_errback
         if not VALID_DB_NAME.match(name):
             return self._invalid_db_name(name, errback)
@@ -73,10 +73,14 @@ class Server(object):
             if response.code == 200:
                 callback(Database(self, name))
             elif response.code == 404:
-                return errback(
-                    trombi.errors.NOT_FOUND,
-                    'Database not found: %r' % name
-                    )
+                # Database doesn't exist
+                if create:
+                    self.create(name, callback, errback)
+                else:
+                    errback(
+                        trombi.errors.NOT_FOUND,
+                        'Database not found: %s' % name
+                        )
 
         self.client.fetch(
             '%s/%s' % (self.baseurl, name),

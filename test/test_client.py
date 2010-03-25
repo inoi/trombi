@@ -73,6 +73,32 @@ def test_invalid_db_name(baseurl, ioloop):
 
 @with_ioloop
 @with_couchdb
+def test_get_create_doesnt_yet_exist(baseurl, ioloop):
+    def callback(db):
+        eq(db.name, 'nonexistent')
+        ioloop.stop()
+
+    s = trombi.Server(baseurl, io_loop=ioloop)
+    s.get('nonexistent', create=True, callback=callback)
+    ioloop.start()
+
+@with_ioloop
+@with_couchdb
+def test_get_create_already_exists(baseurl, ioloop):
+    def create_callback(db):
+        eq(db.name, 'new')
+        s.get('new', create=True, callback=get_callback)
+
+    def get_callback(db):
+        eq(db.name, 'new')
+        ioloop.stop()
+
+    s = trombi.Server(baseurl, io_loop=ioloop)
+    s.create('new', callback=create_callback)
+    ioloop.start()
+
+@with_ioloop
+@with_couchdb
 def test_delete_db(baseurl, ioloop):
     s = trombi.Server(baseurl, io_loop=ioloop)
     def create_callback(db):
@@ -143,7 +169,7 @@ def test_open_nonexisting_database(baseurl, ioloop):
 
     def get_errback(errno, msg):
         eq(errno, trombi.errors.NOT_FOUND)
-        eq(msg, "Database not found: 'testdb1'")
+        eq(msg, "Database not found: testdb1")
         ioloop.stop()
 
     s.get('testdb1', callback=None, errback=get_errback)
