@@ -214,7 +214,6 @@ class Database(object):
             elif response.code == 409:
                 errback(trombi.errors.CONFLICT, data['reason'])
             else:
-                print response.code
                 errback(trombi.errors.SERVER_ERROR, data)
 
         doc_id = urllib.quote(doc.id, safe='')
