@@ -388,11 +388,10 @@ def test_create_document_custom_id_exists(baseurl, ioloop):
 @with_couchdb
 def test_get_document_does_not_exist(baseurl, ioloop):
     def create_db_callback(db):
-        db.get('foo', callback=None, errback=get_errback)
+        db.get('foo', callback=get_callback)
 
-    def get_errback(errno, msg):
-        eq(errno, trombi.errors.NOT_FOUND)
-        eq(msg, 'missing')
+    def get_callback(doc):
+        eq(doc, None)
         ioloop.stop()
 
     s = trombi.Server(baseurl, io_loop=ioloop)

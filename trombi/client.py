@@ -176,6 +176,9 @@ class Database(object):
                 doc = Document(self, data.items())
                 callback(doc)
             elif response.code == 404:
+                # Document doesn't exist
+                callback(None)
+            else:
                 errback(trombi.errors.NOT_FOUND, data['reason'])
 
         doc_id = urllib.quote(doc_id, safe='')
