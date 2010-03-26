@@ -157,14 +157,41 @@ class Database(object):
             url = urllib.quote(doc_id, safe='')
             method = 'PUT'
         else:
-            url = ''
-            method = 'POST'
+            if isinstance(data, Document):
+                url = urllib.quote(data.id, safe='')
+                method = 'PUT'
+            else:
+                url = ''
+                method = 'POST'
+
+        if isinstance(data, Document):
+            doc = data.copy()
+
+            if doc_id is None or doc_id == data.id:
+                # Update the existing document
+                doc_id = data.id
+                doc['_rev'] = data.rev
+
+            url = urllib.quote(doc_id, safe='')
+            method = 'PUT'
+
+        else:
+            doc = data
+
+            # Create a new document
+            if doc_id is None:
+                # Let the server choose a document id
+                url = ''
+                method = 'POST'
+            else:
+                url = urllib.quote(doc_id, safe='')
+                method = 'PUT'
 
         self._fetch(
             url,
             _really_callback,
             method=method,
-            body=json.dumps(data),
+            body=json.dumps(doc),
             )
 
     def get(self, doc_id, callback, errback=None):

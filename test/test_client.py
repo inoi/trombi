@@ -386,6 +386,70 @@ def test_create_document_custom_id_exists(baseurl, ioloop):
 
 @with_ioloop
 @with_couchdb
+def test_update_document(baseurl, ioloop):
+    def create_doc(db):
+        db.set(
+            {'testvalue': 'something'},
+            doc_id='testid',
+            callback=functools.partial(update_doc, db),
+            )
+
+    def update_doc(db, doc):
+        doc['newvalue'] = 'somethingelse'
+        db.set(doc, doc_updated)
+
+    def doc_updated(doc):
+        eq(doc, {
+            'testvalue': 'something',
+            'newvalue': 'somethingelse',
+        })
+        ioloop.stop()
+
+    s = trombi.Server(baseurl, io_loop=ioloop)
+    s.create('testdb', create_doc)
+    ioloop.start()
+
+
+@with_ioloop
+@with_couchdb
+def test_set_document_change_id(baseurl, ioloop):
+    def create_doc(db):
+        db.set(
+            {'testvalue': 'something'},
+            doc_id='testid',
+            callback=functools.partial(update_doc, db),
+            )
+
+    def update_doc(db, doc):
+        doc['newvalue'] = 'somethingelse'
+        db.set(
+            doc,
+            functools.partial(doc_updated, db),
+            doc_id='otherid'
+            )
+
+    def doc_updated(db, doc):
+        eq(doc, {
+            'testvalue': 'something',
+            'newvalue': 'somethingelse',
+        })
+        eq(doc.id, 'otherid')
+
+        # Check that the original didn't change
+        db.get('testid', check_original)
+
+    def check_original(doc):
+        eq(doc, {'testvalue': 'something'})
+        eq(doc.id, 'testid')
+        ioloop.stop()
+
+    s = trombi.Server(baseurl, io_loop=ioloop)
+    s.create('testdb', create_doc)
+    ioloop.start()
+
+
+@with_ioloop
+@with_couchdb
 def test_get_document_does_not_exist(baseurl, ioloop):
     def create_db_callback(db):
         db.get('foo', callback=get_callback)
