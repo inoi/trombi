@@ -730,3 +730,70 @@ def test_load_view_no_such_view(baseurl, ioloop):
     s.create('testdb', callback=create_db_callback)
     ioloop.start()
 
+
+@with_ioloop
+@with_couchdb
+def test_temporary_view_empty_results(baseurl, ioloop):
+    def create_db_callback(db):
+        db.temporary_view(view_results, 'function(doc) { emit(null, doc); }')
+
+    def view_results(result):
+        assert isinstance(result, list)
+        eq(result, [])
+        ioloop.stop()
+
+    s = trombi.Server(baseurl, io_loop=ioloop)
+    s.create('testdb', callback=create_db_callback)
+    ioloop.start()
+
+@with_ioloop
+@with_couchdb
+def test_temporary_view_nonempty_results(baseurl, ioloop):
+    def create_db_callback(db):
+        db.set({'foo': 'bar'}, doc_id='testkey',
+               callback=functools.partial(doc_ready, db))
+
+    def doc_ready(db, doc):
+        db.temporary_view(view_results, 'function(doc) { emit(null, doc); }')
+
+    def view_results(results):
+        eq(len(results), 1)
+        result = results[0]
+
+        # Remove keys starting with _
+        eq(
+            dict((k, v) for k, v in result['value'].items() if k[0] != '_'),
+            {'foo': 'bar'}
+        )
+        eq(result['key'], None)
+
+        ioloop.stop()
+
+    s = trombi.Server(baseurl, io_loop=ioloop)
+    s.create('testdb', callback=create_db_callback)
+    ioloop.start()
+
+@with_ioloop
+@with_couchdb
+def test_temporary_view_with_reduce_fun(baseurl, ioloop):
+    def create_db_callback(db):
+        db.set({'value': 1}, functools.partial(doc_ready, db))
+
+    def doc_ready(db, doc):
+        db.set({'value': 2}, functools.partial(doc2_ready, db))
+
+    def doc2_ready(db, doc):
+        db.temporary_view(
+            view_results,
+            map_fun='function(doc) { emit(null, doc.value); }',
+            reduce_fun='function(key, values) { return sum(values); }'
+        )
+
+    def view_results(results):
+        eq(results, [{'key': None, 'value': 3}])
+
+        ioloop.stop()
+
+    s = trombi.Server(baseurl, io_loop=ioloop)
+    s.create('testdb', callback=create_db_callback)
+    ioloop.start()

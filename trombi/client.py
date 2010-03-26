@@ -232,6 +232,28 @@ class Database(object):
 
         self._fetch(url, _really_callback)
 
+    def temporary_view(self, callback, map_fun, reduce_fun=None,
+                       language='javascript', errback=None, **kwargs):
+        errback = errback or self.server.default_errback
+
+        def _really_callback(response):
+            if response.code == 200:
+                callback(json.loads(response.body)['rows'])
+            else:
+                errback(trombi.errors.SERVER_ERROR, response.body)
+
+        url = '_temp_view'
+        if kwargs:
+            url = '%s?%s' % (url, urllib.urlencode(kwargs))
+
+        body = {'map': map_fun, 'language': language}
+        if reduce_fun:
+            body['reduce'] = reduce_fun
+
+        self._fetch(url, _really_callback, method='POST',
+                    body=json.dumps(body),
+                    headers={'Content-Type': 'application/json'})
+
     def delete(self, doc, callback, errback=None):
         errback = errback or self.server.default_errback
 
