@@ -284,8 +284,9 @@ class Document(dict):
     def __init__(self, db, *a, **kw):
         self.db = db
         super(Document, self).__init__(*a, **kw)
-        self.id = self.pop('_id')
-        self.rev = self.pop('_rev')
+        for key in self.keys():
+            if key.startswith('_'):
+                setattr(self, key[1:], self.pop(key))
 
     def attach(self, name, data, callback, type='text/plain'):
         def _really_callback(response):
