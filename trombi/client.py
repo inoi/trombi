@@ -206,7 +206,7 @@ class Database(object):
                 # Document doesn't exist
                 callback(None)
             else:
-                errback(trombi.errors.NOT_FOUND, data['reason'])
+                errback(trombi.errors.SERVER_ERROR, response.body)
 
         doc_id = urllib.quote(doc_id, safe='')
 
