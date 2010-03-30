@@ -23,6 +23,17 @@ import functools
 import trombi
 import trombi.errors
 
+def test_from_uri():
+    db = trombi.from_uri('http://1.2.3.4/foobar')
+    assert isinstance(db.server, trombi.Server)
+    eq(db.baseurl, 'http://1.2.3.4/foobar')
+    eq(db.name, 'foobar')
+
+    db = trombi.from_uri('http://1.2.3.4:1122/foobar/')
+    assert isinstance(db.server, trombi.Server)
+    eq(db.baseurl, 'http://1.2.3.4:1122/foobar')
+    eq(db.name, 'foobar')
+
 @with_ioloop
 @with_couchdb
 def test_create_db(baseurl, ioloop):

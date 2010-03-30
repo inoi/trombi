@@ -18,6 +18,21 @@ except ImportError:
 
 import trombi.errors
 
+def from_uri(uri, io_loop=None):
+    import urlparse
+
+    p = urlparse.urlparse(uri)
+    if p.params or p.query or p.fragment:
+        raise ValueError('Invalid database address: %s (extra query params)' % uri)
+    if p.scheme != 'http':
+        raise ValueError('Invalid database address: %s (only http:// is supported)' % uri)
+
+    baseurl = urlparse.urlunsplit((p.scheme, p.netloc, '', '', ''))
+    server = Server(baseurl, io_loop)
+
+    db_name = p.path.lstrip('/').rstrip('/')
+    return Database(server, db_name)
+
 class Server(object):
     def __init__(self, baseurl, io_loop=None):
         self.baseurl = baseurl
@@ -117,7 +132,7 @@ class Server(object):
             )
 
 class Database(object):
-    def __init__(self, server, name=None):
+    def __init__(self, server, name):
         self.server = server
         self.name = name
         self.baseurl = '%s/%s' % (self.server.baseurl, self.name)
