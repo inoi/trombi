@@ -1,3 +1,25 @@
+Version 0.2
+===========
+
+Released 2010-04-08
+
+NOTE: There are many backwards-incompatible changes in this version.
+
+* Rename Server.load() to Server.get()
+* Rename Database.load() to Database.get()
+* Rename Database.create() to Database.set()
+* Document.get() now produces None if the document is not found
+* Add a param to Server.get() to create a non-existing database
+* Document.get() now produces None if the document is not found
+  (instead of calling errback)
+* Add support for updating existing documents
+* Provide the correct error message if an unexpected error happens in
+  Document.get()
+* Add support for executing temporary views
+* Add function from_uri() that returns a Database object
+* Remove all special keys from the dict when initializing Document
+
+
 Version 0.1
 ===========
 
