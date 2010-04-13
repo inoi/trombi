@@ -1,3 +1,12 @@
+Version 0.2.1
+=============
+
+Released 2010-04-13
+
+* Refactor fetches so that the closing of AsyncHTTPClient doesn't kill
+  Trombi
+
+
 Version 0.2
 ===========
 
