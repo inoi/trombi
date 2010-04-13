@@ -583,7 +583,7 @@ def test_load_view_empty_results(baseurl, ioloop):
             eq(response.code, 201)
             db.view('testview', 'all', load_view_cb)
 
-        db.server.client.fetch(
+        db.server._fetch(
             '%stestdb/_design/testview' % baseurl,
             create_view_callback,
             method='PUT',
@@ -620,7 +620,7 @@ def test_load_view_with_results(baseurl, ioloop):
             eq(response.code, 201)
             db.set({'data': 'data'}, create_doc_cb)
 
-        db.server.client.fetch(
+        db.server._fetch(
             '%stestdb/_design/testview' % baseurl,
             create_view_callback,
             method='PUT',
@@ -664,7 +664,7 @@ def test_load_view_with_grouping_reduce(baseurl, ioloop):
             eq(response.code, 201)
             db.set({'data': 'data'}, create_doc_cb)
 
-        db.server.client.fetch(
+        db.server._fetch(
             '%stestdb/_design/testview' % baseurl,
             create_view_callback,
             method='PUT',
@@ -715,7 +715,7 @@ def test_load_view_no_such_view(baseurl, ioloop):
         def create_view_callback(useless):
             db.view('testview', 'all', None, errback=load_view_eb)
 
-        db.server.client.fetch(
+        db.server._fetch(
             '%stestdb/_design/testview' % baseurl,
             create_view_callback,
             method='PUT',

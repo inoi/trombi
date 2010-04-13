@@ -10,7 +10,7 @@
 # Asynchronous CouchDB client
 import re
 import urllib
-import tornado.httpclient
+from tornado.httpclient import AsyncHTTPClient
 try:
     import json
 except ImportError:
@@ -39,7 +39,7 @@ class Server(object):
         if self.baseurl[-1] == '/':
             self.baseurl = self.baseurl[:-1]
 
-        self.client = tornado.httpclient.AsyncHTTPClient(io_loop=io_loop)
+        self.io_loop = io_loop
 
     def default_errback(self, error, msg):
         raise ValueError(msg)
@@ -49,6 +49,10 @@ class Server(object):
             trombi.errors.INVALID_DATABASE_NAME,
             'Invalid database name: %r' % name,
             )
+
+    def _fetch(self, *args, **kwargs):
+        # just a convenince wrapper
+        AsyncHTTPClient(io_loop=self.io_loop).fetch(*args, **kwargs)
 
     def create(self, name, callback, errback=None):
         errback = errback or self.default_errback
@@ -72,7 +76,7 @@ class Server(object):
                     response.body,
                     )
 
-        self.client.fetch(
+        self._fetch(
             '%s/%s' % (self.baseurl, name),
             _create_callback,
             method='PUT',
@@ -97,7 +101,7 @@ class Server(object):
                         'Database not found: %s' % name
                         )
 
-        self.client.fetch(
+        self._fetch(
             '%s/%s' % (self.baseurl, name),
             _really_callback,
             )
@@ -111,7 +115,7 @@ class Server(object):
                 errback(trombi.errors.NOT_FOUND,
                         'Database does not exist: %r' % name)
 
-        self.client.fetch(
+        self._fetch(
             '%s/%s' % (self.baseurl, name),
             _really_callback,
             method='DELETE',
@@ -126,7 +130,7 @@ class Server(object):
             else:
                 errback(response)
 
-        self.client.fetch(
+        self._fetch(
             '%s/%s' % (self.baseurl, '_all_dbs'),
             _really_callback,
             )
@@ -143,7 +147,7 @@ class Database(object):
             url = '%s/%s' % (kwargs.pop('baseurl'), url)
         else:
             url = '%s/%s' % (self.baseurl, url)
-        return self.server.client.fetch(url, *args, **kwargs)
+        return self.server._fetch(url, *args, **kwargs)
 
     def set(self, data, callback, doc_id=None, errback=None):
         def _really_callback(response):
