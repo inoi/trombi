@@ -314,7 +314,7 @@ class Document(dict):
             self.rev = data['rev']
             callback(self)
 
-        headers = {'Content-Type': type}
+        headers = {'Content-Type': type, 'Expect': ''}
 
         self.db._fetch(
             '%s/%s?rev=%s' % (self.id, name, self.rev),
