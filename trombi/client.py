@@ -157,13 +157,13 @@ class Database(object):
             except ValueError:
                 content = response.body
             if response.code == 201:
-                doc = Document(
+                couchdb_doc = Document(
                     self,
-                    data.items(),
+                    doc.items(),
                     _id=content['id'],
                     _rev=content['rev'],
                     )
-                callback(doc)
+                callback(couchdb_doc)
             elif response.code == 409:
                 errback(
                     trombi.errors.CONFLICT,
@@ -173,39 +173,20 @@ class Database(object):
                 errback(trombi.errors.SERVER_ERROR,
                         response.body)
 
+        doc = data.copy()
+        if isinstance(data, Document):
+            if doc_id is None or doc_id == data.id:
+                # Update the existing document
+                doc_id = doc['_id'] = data.id
+                doc['_rev'] = data.rev
+
+
         if doc_id is not None:
             url = urllib.quote(doc_id, safe='')
             method = 'PUT'
         else:
-            if isinstance(data, Document):
-                url = urllib.quote(data.id, safe='')
-                method = 'PUT'
-            else:
-                url = ''
-                method = 'POST'
-
-        if isinstance(data, Document):
-            doc = data.copy()
-
-            if doc_id is None or doc_id == data.id:
-                # Update the existing document
-                doc_id = data.id
-                doc['_rev'] = data.rev
-
-            url = urllib.quote(doc_id, safe='')
-            method = 'PUT'
-
-        else:
-            doc = data
-
-            # Create a new document
-            if doc_id is None:
-                # Let the server choose a document id
-                url = ''
-                method = 'POST'
-            else:
-                url = urllib.quote(doc_id, safe='')
-                method = 'PUT'
+            url = ''
+            method = 'POST'
 
         if attachments is not None:
             doc['_attachments'] = {}
@@ -341,7 +322,7 @@ class Document(dict):
         def _really_callback(response):
             callback(response.body)
 
-        if hasattr(self, 'attachments') and name in self.attachments:
+        if name in self.attachments:
             callback(b64decode(self.attachments[name]['data']))
         else:
             self.db._fetch(
