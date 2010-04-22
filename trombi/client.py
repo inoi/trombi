@@ -10,7 +10,7 @@
 # Asynchronous CouchDB client
 import re
 import urllib
-from base64 import b64encode
+from base64 import b64encode, b64decode
 from tornado.httpclient import AsyncHTTPClient
 try:
     import json
@@ -341,10 +341,13 @@ class Document(dict):
         def _really_callback(response):
             callback(response.body)
 
-        self.db._fetch(
-            '%s/%s' % (self.id, name),
-            _really_callback,
-            )
+        if hasattr(self, 'attachments') and name in self.attachments:
+            callback(b64decode(self.attachments[name]['data']))
+        else:
+            self.db._fetch(
+                '%s/%s' % (self.id, name),
+                _really_callback,
+                )
 
     def delete_attachment(self, name, callback):
         def _really_callback(response):

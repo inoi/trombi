@@ -600,6 +600,32 @@ def test_load_inline_attachment(baseurl, ioloop):
     s.create('testdb', callback=create_db_callback)
     ioloop.start()
 
+@with_ioloop
+@with_couchdb
+def test_load_inline_attachment_no_fetch(baseurl, ioloop):
+    def create_db_callback(db):
+        db.set(
+            {'testvalue': 'something'},
+            callback=attach_callback,
+            doc_id='testid',
+            attachments={'foobar': (None, 'some textual data')},
+            )
+
+    def attach_callback(doc):
+        def _broken_fetch(*a, **kw):
+            assert False, 'Fetch called when not needed!'
+
+        doc.db._fetch = _broken_fetch
+        doc.load_attachment('foobar', callback=data_callback)
+
+    def data_callback(data):
+        eq(data, 'some textual data')
+        ioloop.stop()
+
+    s = trombi.Server(baseurl, io_loop=ioloop)
+    s.create('testdb', callback=create_db_callback)
+    ioloop.start()
+
 
 @with_ioloop
 @with_couchdb
