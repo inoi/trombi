@@ -473,6 +473,60 @@ def test_get_document_does_not_exist(baseurl, ioloop):
     s.create('testdb', callback=create_db_callback)
     ioloop.start()
 
+@with_ioloop
+@with_couchdb
+def test_save_attachment_inline(baseurl, ioloop):
+    def create_db_callback(db):
+        db.set(
+            {'testvalue': 'something'},
+            callback=data_callback,
+            doc_id='testid',
+            attachments={'foobar': (None, 'some textual data')},
+            )
+
+    def create_doc_callback(doc):
+        data = 'some textual data'
+        doc.attach('foobar', data, callback=data_callback)
+
+    def data_callback(doc):
+        f = urllib.urlopen('%stestdb/testid/foobar' % baseurl)
+        eq(f.read(), 'some textual data')
+        ioloop.stop()
+
+
+
+    s = trombi.Server(baseurl, io_loop=ioloop)
+    s.create('testdb', callback=create_db_callback)
+    ioloop.start()
+
+@with_ioloop
+@with_couchdb
+def test_save_attachment_inline_custom_content_type(baseurl, ioloop):
+    def create_db_callback(db):
+        db.set(
+            {'testvalue': 'something'},
+            callback=data_callback,
+            doc_id='testid',
+            attachments={'foobar':
+                             ('application/x-custom', 'some textual data')
+                         },
+            )
+
+    def create_doc_callback(doc):
+        data = 'some textual data'
+        doc.attach('foobar', data, callback=data_callback)
+
+    def data_callback(doc):
+        f = urllib.urlopen('%stestdb/testid/foobar' % baseurl)
+        eq(f.info()['Content-Type'], 'application/x-custom')
+        eq(f.read(), 'some textual data')
+        ioloop.stop()
+
+
+
+    s = trombi.Server(baseurl, io_loop=ioloop)
+    s.create('testdb', callback=create_db_callback)
+    ioloop.start()
 
 @with_ioloop
 @with_couchdb
@@ -523,6 +577,29 @@ def test_load_attachment(baseurl, ioloop):
     s = trombi.Server(baseurl, io_loop=ioloop)
     s.create('testdb', callback=create_db_callback)
     ioloop.start()
+
+@with_ioloop
+@with_couchdb
+def test_load_inline_attachment(baseurl, ioloop):
+    def create_db_callback(db):
+        db.set(
+            {'testvalue': 'something'},
+            callback=attach_callback,
+            doc_id='testid',
+            attachments={'foobar': (None, 'some textual data')},
+            )
+
+    def attach_callback(doc):
+        doc.load_attachment('foobar', callback=data_callback)
+
+    def data_callback(data):
+        eq(data, 'some textual data')
+        ioloop.stop()
+
+    s = trombi.Server(baseurl, io_loop=ioloop)
+    s.create('testdb', callback=create_db_callback)
+    ioloop.start()
+
 
 @with_ioloop
 @with_couchdb

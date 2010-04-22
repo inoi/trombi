@@ -10,6 +10,7 @@
 # Asynchronous CouchDB client
 import re
 import urllib
+from base64 import b64encode
 from tornado.httpclient import AsyncHTTPClient
 try:
     import json
@@ -149,7 +150,7 @@ class Database(object):
             url = '%s/%s' % (self.baseurl, url)
         return self.server._fetch(url, *args, **kwargs)
 
-    def set(self, data, callback, doc_id=None, errback=None):
+    def set(self, data, callback, doc_id=None, attachments=None, errback=None):
         def _really_callback(response):
             try:
                 content = json.loads(response.body)
@@ -205,6 +206,18 @@ class Database(object):
             else:
                 url = urllib.quote(doc_id, safe='')
                 method = 'PUT'
+
+        if attachments is not None:
+            doc['_attachments'] = {}
+            for name, attachment in attachments.items():
+                content_type, attachment_data = attachment
+                if content_type is None:
+                    content_type = 'text/plain'
+                doc['_attachments'][name] = {
+                    'content_type': content_type,
+                    'data': b64encode(attachment_data),
+                    }
+
 
         self._fetch(
             url,
