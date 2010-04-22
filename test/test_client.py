@@ -473,31 +473,6 @@ def test_get_document_does_not_exist(baseurl, ioloop):
     s.create('testdb', callback=create_db_callback)
     ioloop.start()
 
-@with_ioloop
-@with_couchdb
-def test_save_attachment(baseurl, ioloop):
-    def create_db_callback(db):
-        db.set(
-            {'testvalue': 'something'},
-            callback=create_doc_callback,
-            doc_id='testid',
-            )
-
-    def create_doc_callback(doc):
-        data = 'some textual data'
-        doc.attach('foobar', data, callback=data_callback)
-
-    def data_callback(doc):
-        f = urllib.urlopen('%stestdb/testid/foobar' % baseurl)
-        eq(f.read(), 'some textual data')
-        ioloop.stop()
-
-
-
-    s = trombi.Server(baseurl, io_loop=ioloop)
-    s.create('testdb', callback=create_db_callback)
-    ioloop.start()
-
 
 @with_ioloop
 @with_couchdb
