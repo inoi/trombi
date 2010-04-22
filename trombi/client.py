@@ -207,7 +207,7 @@ class Database(object):
             body=json.dumps(doc),
             )
 
-    def get(self, doc_id, callback, errback=None):
+    def get(self, doc_id, callback, errback=None, attachments=False):
         errback = errback or self.server.default_errback
 
         def _really_callback(response):
@@ -222,6 +222,9 @@ class Database(object):
                 errback(trombi.errors.SERVER_ERROR, response.body)
 
         doc_id = urllib.quote(doc_id, safe='')
+
+        if attachments is True:
+            doc_id += '?attachments=true'
 
         self._fetch(
             doc_id,
@@ -322,7 +325,9 @@ class Document(dict):
         def _really_callback(response):
             callback(response.body)
 
-        if name in self.attachments:
+        if (hasattr(self, 'attachments') and
+            name in self.attachments and
+            not self.attachments[name].get('stub', False)):
             callback(b64decode(self.attachments[name]['data']))
         else:
             self.db._fetch(

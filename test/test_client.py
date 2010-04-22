@@ -267,6 +267,43 @@ def test_get_document(baseurl, ioloop):
     s.create('testdb', callback=create_db_callback)
     ioloop.start()
 
+
+@with_ioloop
+@with_couchdb
+def test_get_document_with_attachments(baseurl, ioloop):
+    def create_db_callback(db):
+        db.set(
+            {'testvalue': 'something'},
+            callback=functools.partial(create_doc_callback, db=db),
+            attachments={'foo': (None, 'bar')}
+            )
+
+    def create_doc_callback(doc, db=None):
+        db.get(doc.id, callback=get_doc_callback, attachments=True)
+
+    def get_doc_callback(doc):
+        assert isinstance(doc, trombi.Document)
+        assert doc.id
+        assert doc.rev
+
+        eq(doc['testvalue'], 'something')
+
+        def _assert_on_fetch(*a, **kw):
+            assert False, 'Fetch detected, failing test!'
+
+        doc.db._fetch = _assert_on_fetch
+
+        doc.load_attachment('foo', got_attachment)
+
+    def got_attachment(data):
+        eq(data, 'bar')
+        ioloop.stop()
+
+    s = trombi.Server(baseurl, io_loop=ioloop)
+    s.create('testdb', callback=create_db_callback)
+    ioloop.start()
+
+
 @with_ioloop
 @with_couchdb
 def test_create_document_custom_id(baseurl, ioloop):
