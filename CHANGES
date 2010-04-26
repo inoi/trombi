@@ -1,3 +1,14 @@
+Version 0.3
+===========
+
+Released 2010-04-26
+
+* Support inline attachments
+* Avoid modifying the argument of Document.set()
+* Disable "Expect: 100-continue" header when sending attachments, as
+  CouchDB 0.10 doesn't respond correctly
+
+
 Version 0.2.1
 =============
 
