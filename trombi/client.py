@@ -336,7 +336,10 @@ class Document(dict):
             callback(b64decode(self.attachments[name]['data']))
         else:
             self.db._fetch(
-                '%s/%s' % (self.id, name),
+                '%s/%s' % (
+                    urllib.quote(self.id, safe=''),
+                    urllib.quote(name, safe='')
+                    ),
                 _really_callback,
                 )
 
