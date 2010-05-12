@@ -313,8 +313,13 @@ class Document(dict):
 
         headers = {'Content-Type': type, 'Expect': ''}
 
+        doc_id = urllib.quote(self.id)
+
         self.db._fetch(
-            '%s/%s?rev=%s' % (self.id, name, self.rev),
+            '%s/%s?rev=%s' % (
+                urllib.quote(self.id, safe=''),
+                urllib.quote(name, safe=''),
+                self.rev),
             _really_callback,
             method='PUT',
             body=data,
