@@ -923,3 +923,107 @@ def test_temporary_view_with_reduce_fun(baseurl, ioloop):
     s = trombi.Server(baseurl, io_loop=ioloop)
     s.create('testdb', callback=create_db_callback)
     ioloop.start()
+
+
+@with_ioloop
+@with_couchdb
+def test_copy_document(baseurl, ioloop):
+    def create_db_callback(db):
+        db.set(
+            {'testvalue': 'something'},
+            callback=create_doc_callback,
+            )
+
+    def create_doc_callback(doc):
+        doc.copy_doc('newname', copy_done)
+
+    def copy_done(doc):
+        eq(doc.id, 'newname')
+        eq(dict(doc), {'testvalue': 'something'})
+        ioloop.stop()
+
+    s = trombi.Server(baseurl, io_loop=ioloop)
+    s.create('testdb', callback=create_db_callback)
+    ioloop.start()
+
+
+@with_ioloop
+@with_couchdb
+def test_copy_document_with_attachments(baseurl, ioloop):
+    def create_db_callback(db):
+        db.set(
+            {'testvalue': 'something'},
+            callback=create_doc_callback,
+            attachments={'foo': (None, 'bar')}
+            )
+
+    def create_doc_callback(doc):
+        doc.copy_doc('newname', copy_done)
+
+    def copy_done(doc):
+        eq(doc.id, 'newname')
+        eq(dict(doc), {'testvalue': 'something'})
+        eq(doc.attachments.keys(), ['foo'])
+        eq(doc.attachments['foo']['content_type'], 'text/plain')
+        ioloop.stop()
+
+    s = trombi.Server(baseurl, io_loop=ioloop)
+    s.create('testdb', callback=create_db_callback)
+    ioloop.start()
+
+
+@with_ioloop
+@with_couchdb
+def test_copy_loaded_document_with_attachments_false(baseurl, ioloop):
+    def create_db_callback(db):
+        db.set(
+            {'testvalue': 'something'},
+            callback=create_doc_callback,
+            attachments={'foo': (None, 'bar')}
+            )
+
+    def create_doc_callback(doc):
+        doc.db.get(doc.id, got_doc)
+
+    def got_doc(doc):
+        doc.copy_doc('newname', copy_done)
+
+    def copy_done(doc):
+        eq(doc.id, 'newname')
+        eq(dict(doc), {'testvalue': 'something'})
+        eq(doc.attachments.keys(), ['foo'])
+        eq(doc.attachments['foo']['content_type'], 'text/plain')
+        eq(doc.attachments['foo']['data'], 'YmFy')
+        ioloop.stop()
+
+    s = trombi.Server(baseurl, io_loop=ioloop)
+    s.create('testdb', callback=create_db_callback)
+    ioloop.start()
+
+
+@with_ioloop
+@with_couchdb
+def test_copy_loaded_document_with_attachments_true(baseurl, ioloop):
+    def create_db_callback(db):
+        db.set(
+            {'testvalue': 'something'},
+            callback=create_doc_callback,
+            attachments={'foo': (None, 'bar')}
+            )
+
+    def create_doc_callback(doc):
+        doc.db.get(doc.id, got_doc, attachments=True)
+
+    def got_doc(doc):
+        doc.copy_doc('newname', copy_done)
+
+    def copy_done(doc):
+        eq(doc.id, 'newname')
+        eq(dict(doc), {'testvalue': 'something'})
+        eq(doc.attachments.keys(), ['foo'])
+        eq(doc.attachments['foo']['content_type'], 'text/plain')
+        ioloop.stop()
+
+    s = trombi.Server(baseurl, io_loop=ioloop)
+    s.create('testdb', callback=create_db_callback)
+    ioloop.start()

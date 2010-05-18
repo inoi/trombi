@@ -304,6 +304,35 @@ class Document(dict):
             if key.startswith('_'):
                 setattr(self, key[1:], self.pop(key))
 
+    def copy_doc(self, new_id, callback, errback=None):
+        # WARNING: Due to the lack of support of custom, non-standard
+        # HTTP methods in tornado's AsyncHTTPClient, this operation is
+        # not atomic in any way, just a convenience wrapper.
+        #
+        # Also, this hogs memory as hell if there's a load of
+        # attachments. Please do know what you're doing if you use
+        # this function :p
+        assert self.rev and self.id
+
+        def get_done(doc):
+            assert doc.id is not None
+
+            attachments = getattr(doc, 'attachments', None)
+            if attachments:
+                attachments = dict(
+                    (key, (val['content_type'], b64decode(val['data']))) for
+                    key, val in attachments.items())
+
+            self.db.set(
+                doc.copy(),
+                doc_id=new_id,
+                callback=callback,
+                errback=errback,
+                attachments=attachments
+                )
+
+        self.db.get(self.id, callback=get_done, attachments=True)
+
     def attach(self, name, data, callback, type='text/plain'):
         def _really_callback(response):
             data = json.loads(response.body)
