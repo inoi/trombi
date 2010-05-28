@@ -660,6 +660,30 @@ def test_load_attachment(baseurl, ioloop):
 
 @with_ioloop
 @with_couchdb
+def test_load_unkonwn_attachment(baseurl, ioloop):
+    def create_db_callback(db):
+        db.set(
+            {'testvalue': 'something'},
+            callback=create_doc_callback,
+            doc_id='testid',
+            )
+
+    def create_doc_callback(doc):
+        data = 'some textual data'
+        doc.load_attachment('foobar', callback=data_callback)
+
+    def data_callback(result):
+        eq(result.error, True)
+        eq(result.errno, trombi.errors.NOT_FOUND)
+        eq(result.msg, 'Document is missing attachment')
+        ioloop.stop()
+
+    s = trombi.Server(baseurl, io_loop=ioloop)
+    s.create('testdb', callback=create_db_callback)
+    ioloop.start()
+
+@with_ioloop
+@with_couchdb
 def test_load_inline_attachment(baseurl, ioloop):
     def create_db_callback(db):
         db.set(

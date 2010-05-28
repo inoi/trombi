@@ -380,7 +380,10 @@ class Document(dict, TrombiObject):
 
     def load_attachment(self, name, callback):
         def _really_callback(response):
-            callback(response.body)
+            if response.code == 200:
+                callback(response.body)
+            else:
+                callback(_error_response(response))
 
         if (hasattr(self, 'attachments') and
             name in self.attachments and
