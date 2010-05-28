@@ -97,11 +97,7 @@ class Server(TrombiObject):
                         'Database already exists: %r' % name
                         ))
             else:
-                callback(
-                    TrombiError(
-                        response.code,
-                        response.body,
-                        ))
+                callback(_error_response(response))
 
         self._fetch(
             '%s/%s' % (self.baseurl, name),
@@ -126,6 +122,8 @@ class Server(TrombiObject):
                             trombi.errors.NOT_FOUND,
                             'Database not found: %s' % name
                             ))
+            else:
+                callback(_error_response(response))
 
         self._fetch(
             '%s/%s' % (self.baseurl, name),
@@ -143,10 +141,7 @@ class Server(TrombiObject):
                         'Database does not exist: %r' % name
                         ))
             else:
-                callback(TrombiError(
-                        response.code,
-                        response.body,
-                        ))
+                callback(_error_response(response))
 
         self._fetch(
             '%s/%s' % (self.baseurl, name),
@@ -195,16 +190,8 @@ class Database(TrombiObject):
                     _rev=content['rev'],
                     )
                 callback(couchdb_doc)
-            elif response.code == 409:
-                callback(TrombiError(
-                        trombi.errors.CONFLICT,
-                        content['reason']
-                    ))
             else:
-                callback(TrombiError(
-                        trombi.errors.SERVER_ERROR,
-                        response.body
-                        ))
+                callback(_error_response(response))
 
         doc = data.copy()
         if isinstance(data, Document):
@@ -308,8 +295,6 @@ class Database(TrombiObject):
                 return
             if response.code == 200:
                 callback(self)
-            elif response.code == 404 or response.code == 409:
-                callback(TrombiError(response.code, data['reason']))
             else:
                 callback(_error_response(response))
 
