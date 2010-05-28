@@ -179,30 +179,39 @@ class Database(TrombiObject):
             url = '%s/%s' % (self.baseurl, url)
         return self.server._fetch(url, *args, **kwargs)
 
-    def set(self, data, callback, doc_id=None, attachments=None):
-        def _really_callback(response):
-            try:
-                content = json.loads(response.body)
-            except ValueError:
-                content = response.body
-            if response.code == 201:
-                couchdb_doc = Document(
-                    self,
-                    doc.items(),
-                    _id=content['id'],
-                    _rev=content['rev'],
-                    )
-                callback(couchdb_doc)
-            else:
-                callback(_error_response(response))
+    def set(self, *args, **kwargs):
+        if len(args) == 2:
+            data, callback = args
+            doc_id = None
+        elif len(args) == 3:
+            doc_id, data, callback = args
+        else:
+            raise TypeError(
+                'Database.set expected 3 or 4 arguments, got %d' % len(args))
 
-        doc = data.copy()
+        if kwargs:
+            if kwargs.keys() != ['attachments']:
+                if len(kwargs) > 1:
+                    raise TypeError(
+                        '%s are invalid keyword arguments for this function') %(
+                        (', '.join(kwargs.keys())))
+                else:
+                    raise TypeError(
+                        '%s is invalid keyword argument for this function' % (
+                            kargs.keys()[0]))
+
+            attachments = kwargs['attachments']
+        else:
+            attachments = {}
+
         if isinstance(data, Document):
-            if doc_id is None or doc_id == data.id:
-                # Update the existing document
-                doc_id = doc['_id'] = data.id
-                doc['_rev'] = data.rev
+            doc = data
+        else:
+            doc = Document(self, data)
 
+        if doc_id is None and doc.id is not None and doc.rev is not None:
+            # Update the existing document
+            doc_id = doc.id
 
         if doc_id is not None:
             url = urllib.quote(doc_id, safe='')
@@ -211,30 +220,41 @@ class Database(TrombiObject):
             url = ''
             method = 'POST'
 
-        if attachments is not None:
-            doc['_attachments'] = {}
-            for name, attachment in attachments.items():
-                content_type, attachment_data = attachment
-                if content_type is None:
-                    content_type = 'text/plain'
-                doc['_attachments'][name] = {
-                    'content_type': content_type,
-                    'data': b64encode(attachment_data),
-                    }
 
+        for name, attachment in attachments.items():
+            content_type, attachment_data = attachment
+            if content_type is None:
+                content_type = 'text/plain'
+            doc.attachments[name] = {
+                'content_type': content_type,
+                'data': b64encode(attachment_data),
+                }
+
+        def _really_callback(response):
+            try:
+                content = json.loads(response.body)
+            except ValueError:
+                content = response.body
+
+            if response.code == 201:
+                doc.id = content['id']
+                doc.rev = content['rev']
+                callback(doc)
+            else:
+                callback(_error_response(response))
 
         self._fetch(
             url,
             _really_callback,
             method=method,
-            body=json.dumps(doc),
+            body=json.dumps(doc._as_dict()),
             )
 
     def get(self, doc_id, callback, attachments=False):
         def _really_callback(response):
             data = json.loads(response.body)
             if response.code == 200:
-                doc = Document(self, data.items())
+                doc = Document(self, data)
                 callback(doc)
             elif response.code == 404:
                 # Document doesn't exist
@@ -309,14 +329,52 @@ class Database(TrombiObject):
             )
 
 
-class Document(dict, TrombiObject):
-    def __init__(self, db, *a, **kw):
+class Document(collections.MutableMapping, TrombiObject):
+    def __init__(self, db, data):
         self.db = db
-        # MRO dictates this initiates the dict, not the TrombiObject
-        super(Document, self).__init__(*a, **kw)
-        for key in self.keys():
+        self.data = {}
+        self.id = None
+        self.rev = None
+        self._postponed_attachments = False
+        self.attachments = {}
+
+        for key, value in data.items():
             if key.startswith('_'):
-                setattr(self, key[1:], self.pop(key))
+                setattr(self, key[1:], value)
+            else:
+                self[key] = value
+
+    def __len__(self):
+        return len(self.data)
+
+    def __iter__(self):
+        return iter(self.data)
+
+    def __contains__(self, key):
+        return key in self.data
+
+    def __getitem__(self, key):
+        return self.data[key]
+
+    def __setitem__(self, key, value):
+        if key.startswith('_'):
+            raise KeyError("Keys starting with '_' are reserved for CouchDB")
+        self.data[key] = value
+
+    def __delitem__(self, key):
+        del self.data[key]
+
+    def _as_dict(self):
+        result = {}
+        if self.id:
+            result['_id'] = self.id
+        if self.rev:
+            result['_rev'] = self.rev
+        if self.attachments:
+            result['_attachments'] = self.attachments
+
+        result.update(self.data)
+        return result
 
     def copy_doc(self, new_id, callback):
         # WARNING: Due to the lack of support of custom, non-standard
