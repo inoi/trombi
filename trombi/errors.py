@@ -8,6 +8,7 @@
 # Inoi Oy.
 
 # Collection of possible couchdb errors
+BAD_REQUEST = 400
 CONFLICT = 409
 PRECONDITION_FAILED = 412
 NOT_FOUND = 404

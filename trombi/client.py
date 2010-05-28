@@ -34,19 +34,44 @@ def from_uri(uri, io_loop=None):
     db_name = p.path.lstrip('/').rstrip('/')
     return Database(server, db_name)
 
-class Server(object):
+
+class TrombiError(object):
+    def __init__(self, errno, msg):
+        self.error = True
+        self.errno = errno
+        self.msg = msg
+
+
+class TrombiObject(object):
+    """
+    Dummy result for queries that really don't have anything sane to
+    return, like succesful database deletion.
+
+    """
+    error = False
+
+def _error_response(response):
+    try:
+        content = json.loads(response.body)
+    except ValueError:
+        return TrombiError(response.code, response.body)
+    try:
+        return TrombiError(response.code, content['reason'])
+    except (KeyError, TypeError):
+        # TypeError is risen if the result is a list
+        return TrombiError(response.code, content)
+
+class Server(TrombiObject):
     def __init__(self, baseurl, io_loop=None):
+        self.error = False
         self.baseurl = baseurl
         if self.baseurl[-1] == '/':
             self.baseurl = self.baseurl[:-1]
 
         self.io_loop = io_loop
 
-    def default_errback(self, error, msg):
-        raise ValueError(msg)
-
-    def _invalid_db_name(self, name, errback):
-        errback(
+    def _invalid_db_name(self, name):
+        return TrombiError(
             trombi.errors.INVALID_DATABASE_NAME,
             'Invalid database name: %r' % name,
             )
@@ -55,27 +80,26 @@ class Server(object):
         # just a convenince wrapper
         AsyncHTTPClient(io_loop=self.io_loop).fetch(*args, **kwargs)
 
-    def create(self, name, callback, errback=None):
-        errback = errback or self.default_errback
-
+    def create(self, name, callback):
         if not VALID_DB_NAME.match(name):
             # Avoid additional HTTP Query by doing the check here
-            self._invalid_db_name(name, errback)
-            return
+            callback(self._invalid_db_name(name))
 
         def _create_callback(response):
             if response.code == 201:
                 callback(Database(self, name))
             elif response.code == 412:
-                errback(
-                    trombi.errors.PRECONDITION_FAILED,
-                    'Database already exists: %r' % name
-                    )
+                callback(
+                    TrombiError(
+                        trombi.errors.PRECONDITION_FAILED,
+                        'Database already exists: %r' % name
+                        ))
             else:
-                errback(
-                    response.code,
-                    response.body,
-                    )
+                callback(
+                    TrombiError(
+                        response.code,
+                        response.body,
+                        ))
 
         self._fetch(
             '%s/%s' % (self.baseurl, name),
@@ -84,10 +108,9 @@ class Server(object):
             body='',
             )
 
-    def get(self, name, callback, errback=None, create=False):
-        errback = errback or self.default_errback
+    def get(self, name, callback, create=False):
         if not VALID_DB_NAME.match(name):
-            return self._invalid_db_name(name, errback)
+            callback(self._invalid_db_name(name))
 
         def _really_callback(response):
             if response.code == 200:
@@ -95,26 +118,33 @@ class Server(object):
             elif response.code == 404:
                 # Database doesn't exist
                 if create:
-                    self.create(name, callback, errback)
+                    self.create(name, callback)
                 else:
-                    errback(
-                        trombi.errors.NOT_FOUND,
-                        'Database not found: %s' % name
-                        )
+                    callback(TrombiError(
+                            trombi.errors.NOT_FOUND,
+                            'Database not found: %s' % name
+                            ))
 
         self._fetch(
             '%s/%s' % (self.baseurl, name),
             _really_callback,
             )
-    def delete(self, name, callback, errback=None):
-        errback = errback or self.default_errback
+    def delete(self, name, callback):
 
         def _really_callback(response):
             if response.code == 200:
-                callback()
+                callback(TrombiObject())
             elif response.code == 404:
-                errback(trombi.errors.NOT_FOUND,
-                        'Database does not exist: %r' % name)
+                callback(
+                    TrombiError(
+                        trombi.errors.NOT_FOUND,
+                        'Database does not exist: %r' % name
+                        ))
+            else:
+                callback(TrombiError(
+                        response.code,
+                        response.body,
+                        ))
 
         self._fetch(
             '%s/%s' % (self.baseurl, name),
@@ -123,20 +153,19 @@ class Server(object):
             body='',
             )
 
-    def list(self, callback, errback=None):
-        errback = errback or self.default_errback
+    def list(self, callback):
         def _really_callback(response):
             if response.code == 200:
                 callback(Database(self, x) for x in json.loads(response.body))
             else:
-                errback(response)
+                callback(_error_response(response))
 
         self._fetch(
             '%s/%s' % (self.baseurl, '_all_dbs'),
             _really_callback,
             )
 
-class Database(object):
+class Database(TrombiObject):
     def __init__(self, server, name):
         self.server = server
         self.name = name
@@ -150,7 +179,7 @@ class Database(object):
             url = '%s/%s' % (self.baseurl, url)
         return self.server._fetch(url, *args, **kwargs)
 
-    def set(self, data, callback, doc_id=None, attachments=None, errback=None):
+    def set(self, data, callback, doc_id=None, attachments=None):
         def _really_callback(response):
             try:
                 content = json.loads(response.body)
@@ -165,13 +194,15 @@ class Database(object):
                     )
                 callback(couchdb_doc)
             elif response.code == 409:
-                errback(
-                    trombi.errors.CONFLICT,
-                    content['reason']
-                    )
+                callback(TrombiError(
+                        trombi.errors.CONFLICT,
+                        content['reason']
+                    ))
             else:
-                errback(trombi.errors.SERVER_ERROR,
-                        response.body)
+                callback(TrombiError(
+                        trombi.errors.SERVER_ERROR,
+                        response.body
+                        ))
 
         doc = data.copy()
         if isinstance(data, Document):
@@ -207,9 +238,7 @@ class Database(object):
             body=json.dumps(doc),
             )
 
-    def get(self, doc_id, callback, errback=None, attachments=False):
-        errback = errback or self.server.default_errback
-
+    def get(self, doc_id, callback, attachments=False):
         def _really_callback(response):
             data = json.loads(response.body)
             if response.code == 200:
@@ -219,7 +248,7 @@ class Database(object):
                 # Document doesn't exist
                 callback(None)
             else:
-                errback(trombi.errors.SERVER_ERROR, response.body)
+                callback(_error_response(response))
 
         doc_id = urllib.quote(doc_id, safe='')
 
@@ -232,15 +261,15 @@ class Database(object):
             )
 
     def view(self, design_doc, viewname, callback, **kwargs):
-        errback = kwargs.pop('errback', None) or self.server.default_errback
         def _really_callback(response):
             if response.code == 200:
                 callback(json.loads(response.body)['rows'])
             elif response.code == 404:
-                errback(trombi.errors.NOT_FOUND,
-                         json.loads(response.body)['reason'])
+                callback(TrombiError(trombi.errors.NOT_FOUND,
+                                     json.loads(response.body)['reason'],
+                                     ))
             else:
-                errback(trombi.errors.SERVER_ERROR, response.body)
+                callback(_error_response(response))
 
         url = '_design/%s/_view/%s' % (design_doc, viewname)
         if kwargs:
@@ -249,14 +278,12 @@ class Database(object):
         self._fetch(url, _really_callback)
 
     def temporary_view(self, callback, map_fun, reduce_fun=None,
-                       language='javascript', errback=None, **kwargs):
-        errback = errback or self.server.default_errback
-
+                       language='javascript', **kwargs):
         def _really_callback(response):
             if response.code == 200:
                 callback(json.loads(response.body)['rows'])
             else:
-                errback(trombi.errors.SERVER_ERROR, response.body)
+                callback(_error_response(response))
 
         url = '_temp_view'
         if kwargs:
@@ -270,23 +297,19 @@ class Database(object):
                     body=json.dumps(body),
                     headers={'Content-Type': 'application/json'})
 
-    def delete(self, doc, callback, errback=None):
-        errback = errback or self.server.default_errback
-
+    def delete(self, doc, callback):
         def _really_callback(response):
             try:
                 data = json.loads(response.body)
             except ValueError:
-                data = response.body
-
+                callback(_error_response(response))
+                return
             if response.code == 200:
                 callback(self)
-            elif response.code == 404:
-                errback(trombi.errors.NOT_FOUND, data['reason'])
-            elif response.code == 409:
-                errback(trombi.errors.CONFLICT, data['reason'])
+            elif response.code == 404 or response.code == 409:
+                callback(TrombiError(response.code, data['reason']))
             else:
-                errback(trombi.errors.SERVER_ERROR, data)
+                callback(_error_response(response))
 
         doc_id = urllib.quote(doc.id, safe='')
         self._fetch(
@@ -296,15 +319,16 @@ class Database(object):
             )
 
 
-class Document(dict):
+class Document(dict, TrombiObject):
     def __init__(self, db, *a, **kw):
         self.db = db
+        # MRO dictates this initiates the dict, not the TrombiObject
         super(Document, self).__init__(*a, **kw)
         for key in self.keys():
             if key.startswith('_'):
                 setattr(self, key[1:], self.pop(key))
 
-    def copy_doc(self, new_id, callback, errback=None):
+    def copy_doc(self, new_id, callback):
         # WARNING: Due to the lack of support of custom, non-standard
         # HTTP methods in tornado's AsyncHTTPClient, this operation is
         # not atomic in any way, just a convenience wrapper.
@@ -327,7 +351,6 @@ class Document(dict):
                 doc.copy(),
                 doc_id=new_id,
                 callback=callback,
-                errback=errback,
                 attachments=attachments
                 )
 

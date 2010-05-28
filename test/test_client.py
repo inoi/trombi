@@ -38,6 +38,7 @@ def test_from_uri():
 @with_couchdb
 def test_create_db(baseurl, ioloop):
     def create_callback(db):
+        eq(db.error, False)
         assert isinstance(db, trombi.Database)
         f = urllib.urlopen('%s_all_dbs' % baseurl)
         eq(json.load(f), [db.name])
@@ -56,13 +57,13 @@ def test_db_exists(baseurl, ioloop):
     def first_callback(db):
         s.create(
             'couchdb-database',
-            callback=None,
-            errback=create_errback
+            callback=callback,
             )
 
-    def create_errback(errno, msg):
-        eq(errno, trombi.errors.PRECONDITION_FAILED)
-        eq(msg, "Database already exists: 'couchdb-database'")
+    def callback(result):
+        eq(result.error, True)
+        eq(result.errno, trombi.errors.PRECONDITION_FAILED)
+        eq(result.msg, "Database already exists: 'couchdb-database'")
         f = urllib.urlopen('%s_all_dbs' % baseurl)
         eq(json.load(f), ['couchdb-database'])
         ioloop.stop()
@@ -73,19 +74,21 @@ def test_db_exists(baseurl, ioloop):
 @with_ioloop
 @with_couchdb
 def test_invalid_db_name(baseurl, ioloop):
-    def errback(errno, msg):
-        eq(errno, trombi.errors.INVALID_DATABASE_NAME)
-        eq(msg, "Invalid database name: 'this name is invalid'")
+    def callback(result):
+        eq(result.error, True)
+        eq(result.errno, trombi.errors.INVALID_DATABASE_NAME)
+        eq(result.msg, "Invalid database name: 'this name is invalid'")
         ioloop.stop()
 
     s = trombi.Server(baseurl, io_loop=ioloop)
-    s.create('this name is invalid', callback=lambda x: x, errback=errback)
+    s.create('this name is invalid', callback=callback)
     ioloop.start()
 
 @with_ioloop
 @with_couchdb
 def test_get_create_doesnt_yet_exist(baseurl, ioloop):
     def callback(db):
+        eq(db.error, False)
         eq(db.name, 'nonexistent')
         ioloop.stop()
 
@@ -101,6 +104,7 @@ def test_get_create_already_exists(baseurl, ioloop):
         s.get('new', create=True, callback=get_callback)
 
     def get_callback(db):
+        eq(db.error, False)
         eq(db.name, 'new')
         ioloop.stop()
 
@@ -115,7 +119,8 @@ def test_delete_db(baseurl, ioloop):
     def create_callback(db):
         s.delete('testdatabase', callback=delete_callback)
 
-    def delete_callback():
+    def delete_callback(result):
+        eq(result.error, False)
         f = urllib.urlopen('%s_all_dbs' % baseurl)
         eq(json.load(f), [])
         ioloop.stop()
@@ -126,13 +131,14 @@ def test_delete_db(baseurl, ioloop):
 @with_ioloop
 @with_couchdb
 def test_delete_db_not_exists(baseurl, ioloop):
-    def delete_errback(errno, msg):
-        eq(errno, trombi.errors.NOT_FOUND)
-        eq(msg, "Database does not exist: 'testdatabase'")
+    def callback(result):
+        eq(result.error, True)
+        eq(result.errno, trombi.errors.NOT_FOUND)
+        eq(result.msg, "Database does not exist: 'testdatabase'")
         ioloop.stop()
 
     s = trombi.Server(baseurl, io_loop=ioloop)
-    s.delete('testdatabase', callback=None, errback=delete_errback)
+    s.delete('testdatabase', callback=callback)
     ioloop.start()
 
 @with_ioloop
@@ -166,6 +172,7 @@ def test_open_database(baseurl, ioloop):
         s.get('testdb1', callback=get_callback)
 
     def get_callback(db):
+        eq(db.error, False)
         eq(db.name, 'testdb1')
         eq(db.server, s)
         ioloop.stop()
@@ -178,12 +185,13 @@ def test_open_database(baseurl, ioloop):
 def test_open_nonexisting_database(baseurl, ioloop):
     s = trombi.Server(baseurl, io_loop=ioloop)
 
-    def get_errback(errno, msg):
-        eq(errno, trombi.errors.NOT_FOUND)
-        eq(msg, "Database not found: testdb1")
+    def callback(result):
+        eq(result.error, True)
+        eq(result.errno, trombi.errors.NOT_FOUND)
+        eq(result.msg, "Database not found: testdb1")
         ioloop.stop()
 
-    s.get('testdb1', callback=None, errback=get_errback)
+    s.get('testdb1', callback=callback)
     ioloop.start()
 
 @with_ioloop
@@ -191,12 +199,13 @@ def test_open_nonexisting_database(baseurl, ioloop):
 def test_open_database_bad_name(baseurl, ioloop):
     s = trombi.Server(baseurl, io_loop=ioloop)
 
-    def get_errback(errno, msg):
-        eq(errno, trombi.errors.INVALID_DATABASE_NAME)
-        eq(msg, "Invalid database name: 'not a valid name'")
+    def callback(result):
+        eq(result.error, True)
+        eq(result.errno, trombi.errors.INVALID_DATABASE_NAME)
+        eq(result.msg, "Invalid database name: 'not a valid name'")
         ioloop.stop()
 
-    s.get('not a valid name', callback=None, errback=get_errback)
+    s.get('not a valid name', callback=callback)
     ioloop.start()
 
 @with_ioloop
@@ -209,6 +218,7 @@ def test_create_document(baseurl, ioloop):
             )
 
     def create_doc_callback(doc):
+        eq(doc.error, False)
         assert isinstance(doc, trombi.Document)
         assert doc.id
         assert doc.rev
@@ -231,6 +241,7 @@ def test_create_document_with_slash(baseurl, ioloop):
             )
 
     def create_doc_callback(doc):
+        eq(doc.error, False)
         assert isinstance(doc, trombi.Document)
         assert doc.id
         assert doc.rev
@@ -246,189 +257,221 @@ def test_create_document_with_slash(baseurl, ioloop):
 @with_ioloop
 @with_couchdb
 def test_get_document(baseurl, ioloop):
-    def create_db_callback(db):
+    def do_test(db):
+        def create_doc_callback(doc):
+            db.get(doc.id, callback=get_doc_callback)
+
+        def get_doc_callback(doc):
+            eq(doc.error, False)
+            assert isinstance(doc, trombi.Document)
+            assert doc.id
+            assert doc.rev
+
+            eq(doc['testvalue'], 'something')
+            ioloop.stop()
+
         db.set(
             {'testvalue': 'something'},
-            callback=functools.partial(create_doc_callback, db=db)
+            callback=create_doc_callback,
             )
 
-    def create_doc_callback(doc, db=None):
-        db.get(doc.id, callback=get_doc_callback)
-
-    def get_doc_callback(doc):
-        assert isinstance(doc, trombi.Document)
-        assert doc.id
-        assert doc.rev
-
-        eq(doc['testvalue'], 'something')
-        ioloop.stop()
-
     s = trombi.Server(baseurl, io_loop=ioloop)
-    s.create('testdb', callback=create_db_callback)
+    s.create('testdb', callback=do_test)
     ioloop.start()
 
 
 @with_ioloop
 @with_couchdb
 def test_get_document_with_attachments(baseurl, ioloop):
-    def create_db_callback(db):
+    def do_test(db):
+        def create_doc_callback(doc):
+            db.get(doc.id, callback=get_doc_callback, attachments=True)
+
+        def get_doc_callback(doc):
+            assert isinstance(doc, trombi.Document)
+            assert doc.id
+            assert doc.rev
+
+            eq(doc['testvalue'], 'something')
+
+            def _assert_on_fetch(*a, **kw):
+                assert False, 'Fetch detected, failing test!'
+
+            doc.db._fetch = _assert_on_fetch
+
+            doc.load_attachment('foo', got_attachment)
+
+        def got_attachment(data):
+            eq(data, 'bar')
+            ioloop.stop()
+
         db.set(
             {'testvalue': 'something'},
-            callback=functools.partial(create_doc_callback, db=db),
+            callback=create_doc_callback,
             attachments={'foo': (None, 'bar')}
             )
 
-    def create_doc_callback(doc, db=None):
-        db.get(doc.id, callback=get_doc_callback, attachments=True)
-
-    def get_doc_callback(doc):
-        assert isinstance(doc, trombi.Document)
-        assert doc.id
-        assert doc.rev
-
-        eq(doc['testvalue'], 'something')
-
-        def _assert_on_fetch(*a, **kw):
-            assert False, 'Fetch detected, failing test!'
-
-        doc.db._fetch = _assert_on_fetch
-
-        doc.load_attachment('foo', got_attachment)
-
-    def got_attachment(data):
-        eq(data, 'bar')
-        ioloop.stop()
-
     s = trombi.Server(baseurl, io_loop=ioloop)
-    s.create('testdb', callback=create_db_callback)
+    s.create('testdb', callback=do_test)
     ioloop.start()
 
 
 @with_ioloop
 @with_couchdb
 def test_create_document_custom_id(baseurl, ioloop):
-    def create_db_callback(db):
+    def do_test(db):
+        def create_doc_callback(doc):
+            eq(doc.error, False)
+            assert isinstance(doc, trombi.Document)
+            eq(doc.id, 'testid')
+            assert '_id' not in doc
+            assert '_rev' not in doc
+            assert doc.rev
+
+            eq(doc['testvalue'], 'something')
+
+            f = urllib.urlopen('%stestdb/testid' % baseurl)
+            eq(json.load(f),
+               {'_id': 'testid',
+                '_rev': doc.rev,
+                'testvalue': 'something',
+                })
+            ioloop.stop()
+
         db.set(
             {'testvalue': 'something'},
             callback=create_doc_callback,
             doc_id='testid',
             )
 
-    def create_doc_callback(doc):
-        assert isinstance(doc, trombi.Document)
-        eq(doc.id, 'testid')
-        assert '_id' not in doc
-        assert '_rev' not in doc
-        assert doc.rev
-
-        eq(doc['testvalue'], 'something')
-
-        f = urllib.urlopen('%stestdb/testid' % baseurl)
-        eq(json.load(f),
-           {'_id': 'testid',
-            '_rev': doc.rev,
-            'testvalue': 'something',
-            })
-        ioloop.stop()
-
     s = trombi.Server(baseurl, io_loop=ioloop)
-    s.create('testdb', callback=create_db_callback)
+    s.create('testdb', callback=do_test)
     ioloop.start()
 
 @with_ioloop
 @with_couchdb
 def test_delete_document(baseurl, ioloop):
-    def create_db_callback(db):
+    def do_test(db):
+        def create_doc_callback(doc):
+            eq(db.error, False)
+            db.delete(doc, callback=delete_doc_callback)
+
+        def delete_doc_callback(db):
+            eq(db.error, False)
+            assert isinstance(db, trombi.Database)
+            ioloop.stop()
+
+            f = urllib.urlopen('%stestdb/testid' % baseurl)
+            eq(f.getcode(), 404)
+
         db.set(
             {'testvalue': 'something'},
-            callback=functools.partial(create_doc_callback, db),
+            callback=create_doc_callback,
             doc_id='testid'
             )
 
-    def create_doc_callback(db, doc):
-        db.delete(doc, callback=delete_doc_callback)
-
-    def delete_doc_callback(db):
-        assert isinstance(db, trombi.Database)
-        ioloop.stop()
-
-        f = urllib.urlopen('%stestdb/testid' % baseurl)
-        eq(f.getcode(), 404)
-
     s = trombi.Server(baseurl, io_loop=ioloop)
-    s.create('testdb', callback=create_db_callback)
+    s.create('testdb', callback=do_test)
     ioloop.start()
 
 @with_ioloop
 @with_couchdb
 def test_delete_document_not_existing(baseurl, ioloop):
-    def create_db_callback(db):
+    def do_test(db):
+        def create_doc_callback(doc):
+            doc.id = 'wrongid'
+            db.delete(doc, callback=delete_doc_errback)
+
+        def delete_doc_errback(response):
+            eq(response.error, True)
+            eq(response.errno, trombi.errors.NOT_FOUND)
+            eq(response.msg, 'missing')
+            ioloop.stop()
+
         db.set(
             {'testvalue': 'something'},
-            callback=functools.partial(create_doc_callback, db),
+            callback=create_doc_callback,
             doc_id='testid'
             )
 
-    def create_doc_callback(db, doc):
-        doc.id = 'wrongid'
-        db.delete(doc, callback=None, errback=delete_doc_errback)
-
-    def delete_doc_errback(errno, msg):
-        eq(errno, trombi.errors.NOT_FOUND)
-        eq(msg, 'missing')
-        ioloop.stop()
-
     s = trombi.Server(baseurl, io_loop=ioloop)
-    s.create('testdb', callback=create_db_callback)
+    s.create('testdb', callback=do_test)
     ioloop.start()
 
 
 @with_ioloop
 @with_couchdb
 def test_delete_document_wrong_rev(baseurl, ioloop):
-    def create_db_callback(db):
+    def do_test(db):
+        def create_doc_callback(doc):
+            doc.rev = '1-eabf'
+            db.delete(doc, callback=delete_doc_callback)
+
+        def delete_doc_callback(result):
+            eq(result.error, True)
+            eq(result.errno, trombi.errors.CONFLICT)
+            eq(result.msg, 'Document update conflict.')
+            ioloop.stop()
+
         db.set(
             {'testvalue': 'something'},
-            callback=functools.partial(create_doc_callback, db),
+            callback=create_doc_callback,
             doc_id='testid'
             )
 
-    def create_doc_callback(db, doc):
-        doc.rev = 'wrong'
-        db.delete(doc, callback=None, errback=delete_doc_errback)
+    s = trombi.Server(baseurl, io_loop=ioloop)
+    s.create('testdb', callback=do_test)
+    ioloop.start()
 
-    def delete_doc_errback(errno, msg):
-        eq(errno, trombi.errors.SERVER_ERROR)
-        ioloop.stop()
+@with_ioloop
+@with_couchdb
+def test_delete_document_invalid_rev(baseurl, ioloop):
+    def do_test(db):
+        def create_doc_callback(doc):
+            doc.rev = 'invalid'
+            db.delete(doc, callback=delete_doc_callback)
+
+        def delete_doc_callback(result):
+            eq(result.error, True)
+            eq(result.errno, trombi.errors.BAD_REQUEST)
+            eq(result.msg, 'Invalid rev format')
+            ioloop.stop()
+
+        db.set(
+            {'testvalue': 'something'},
+            callback=create_doc_callback,
+            doc_id='testid'
+            )
 
     s = trombi.Server(baseurl, io_loop=ioloop)
-    s.create('testdb', callback=create_db_callback)
+    s.create('testdb', callback=do_test)
     ioloop.start()
 
 @with_ioloop
 @with_couchdb
 def test_create_document_custom_id_exists(baseurl, ioloop):
-    def create_db_callback(db):
-        db.set(
-            {'testvalue': 'something'},
-            callback=functools.partial(create_doc_callback, db=db),
-            doc_id='testid',
-            )
+    def do_test(db):
+        def create_doc_callback(doc):
+            db.set(
+                {'testvalue': 'something'},
+                update_doc_error,
+                doc_id='testid',
+                )
 
-    def create_doc_callback(doc, db):
+        def update_doc_error(result):
+            eq(result.error, True)
+            eq(result.errno, trombi.errors.CONFLICT)
+            eq(result.msg, 'Document update conflict.')
+            ioloop.stop()
+
         db.set(
             {'testvalue': 'something'},
-            None,
+            callback=create_doc_callback,
             doc_id='testid',
-            errback=update_doc_error,
             )
-    def update_doc_error(errno, msg):
-        eq(errno, trombi.errors.CONFLICT)
-        eq(msg, 'Document update conflict.')
-        ioloop.stop()
 
     s = trombi.Server(baseurl, io_loop=ioloop)
-    s.create('testdb', callback=create_db_callback)
+    s.create('testdb', callback=do_test)
     ioloop.start()
 
 
@@ -811,11 +854,12 @@ def test_load_view_with_grouping_reduce(baseurl, ioloop):
 @with_couchdb
 def test_load_view_no_design_doc(baseurl, ioloop):
     def create_db_callback(db):
-        def load_view_eb(errno, msg):
-            eq(errno, trombi.errors.NOT_FOUND)
-            eq(msg, 'missing')
+        def load_view_cb(result):
+            eq(result.error, True)
+            eq(result.errno, trombi.errors.NOT_FOUND)
+            eq(result.msg, 'missing')
             ioloop.stop()
-        db.view('testview', 'all', None, errback=load_view_eb, group='true')
+        db.view('testview', 'all', load_view_cb, group='true')
 
 
     s = trombi.Server(baseurl, io_loop=ioloop)
@@ -826,9 +870,15 @@ def test_load_view_no_design_doc(baseurl, ioloop):
 @with_ioloop
 @with_couchdb
 def test_load_view_no_such_view(baseurl, ioloop):
-    def create_db_callback(db):
+    def do_test(db):
         def create_view_callback(useless):
-            db.view('testview', 'all', None, errback=load_view_eb)
+            db.view('testview', 'all', load_view_cb)
+
+        def load_view_cb(result):
+            eq(result.error, True)
+            eq(result.errno, trombi.errors.NOT_FOUND)
+            eq(result.msg, 'missing_named_view')
+            ioloop.stop()
 
         db.server._fetch(
             '%stestdb/_design/testview' % baseurl,
@@ -847,13 +897,9 @@ def test_load_view_no_such_view(baseurl, ioloop):
                     }
                 )
             )
-    def load_view_eb(errno, msg):
-        eq(errno, trombi.errors.NOT_FOUND)
-        eq(msg, 'missing_named_view')
-        ioloop.stop()
 
     s = trombi.Server(baseurl, io_loop=ioloop)
-    s.create('testdb', callback=create_db_callback)
+    s.create('testdb', callback=do_test)
     ioloop.start()
 
 
@@ -871,6 +917,22 @@ def test_temporary_view_empty_results(baseurl, ioloop):
     s = trombi.Server(baseurl, io_loop=ioloop)
     s.create('testdb', callback=create_db_callback)
     ioloop.start()
+
+
+@with_ioloop
+@with_couchdb
+def test_temporary_view_no_such_db(baseurl, ioloop):
+    def view_results(result):
+        eq(result.error, True)
+        eq(result.errno, trombi.errors.NOT_FOUND)
+        eq(result.msg, 'no_db_file')
+        ioloop.stop()
+
+    s = trombi.Server(baseurl, io_loop=ioloop)
+    db = trombi.Database(s, 'doesnotexist')
+    db.temporary_view(view_results, 'function() { emit(null);}')
+    ioloop.start()
+
 
 @with_ioloop
 @with_couchdb
