@@ -760,10 +760,16 @@ def test_delete_attachment(baseurl, ioloop):
 @with_ioloop
 @with_couchdb
 def test_load_view_empty_results(baseurl, ioloop):
-    def create_db_callback(db):
+    def do_test(db):
         def create_view_callback(response):
             eq(response.code, 201)
             db.view('testview', 'all', load_view_cb)
+
+        def load_view_cb(result):
+            assert isinstance(result, trombi.ViewResult)
+            eq(result.error, False)
+            eq(len(result), 0)
+            ioloop.stop()
 
         db.server._fetch(
             '%stestdb/_design/testview' % baseurl,
@@ -781,26 +787,30 @@ def test_load_view_empty_results(baseurl, ioloop):
                 )
             )
 
-    def load_view_cb(result):
-        assert isinstance(result, list)
-        eq(result, [])
-        ioloop.stop()
-
     s = trombi.Server(baseurl, io_loop=ioloop)
-    s.create('testdb', callback=create_db_callback)
+    s.create('testdb', callback=do_test)
     ioloop.start()
 
 
 @with_ioloop
 @with_couchdb
 def test_load_view_with_results(baseurl, ioloop):
-    def create_db_callback(db):
-        def create_doc_cb(doc):
-            db.view('testview', 'all', load_view_cb)
-
+    def do_test(db):
         def create_view_callback(response):
             eq(response.code, 201)
             db.set({'data': 'data'}, create_doc_cb)
+
+        def create_doc_cb(doc):
+            db.view('testview', 'all', load_view_cb)
+
+        def load_view_cb(result):
+            eq(result.error, False)
+            eq(len(result), 1)
+            del result[0]['value']['_rev']
+            del result[0]['value']['_id']
+            del result[0]['id']
+            eq(list(result), [{'value': {'data': 'data'}, 'key': None}])
+            ioloop.stop()
 
         db.server._fetch(
             '%stestdb/_design/testview' % baseurl,
@@ -818,33 +828,29 @@ def test_load_view_with_results(baseurl, ioloop):
                 )
             )
 
-    def load_view_cb(result):
-        assert isinstance(result, list)
-        eq(len(result), 1)
-        result[0]['value'].pop('_rev')
-        result[0]['value'].pop('_id')
-        result[0].pop('id')
-        eq(result, [{'value': {'data': 'data'}, 'key': None}])
-        ioloop.stop()
-
     s = trombi.Server(baseurl, io_loop=ioloop)
-    s.create('testdb', callback=create_db_callback)
+    s.create('testdb', callback=do_test)
     ioloop.start()
 
 @with_ioloop
 @with_couchdb
 def test_load_view_with_grouping_reduce(baseurl, ioloop):
-    def create_db_callback(db):
-        times = 0
-        def create_doc_cb(doc):
-            if doc['data'] == 'other':
-                db.view('testview', 'all', load_view_cb, group='true')
-            else:
-                db.set({'data': 'other'}, create_doc_cb)
-
+    def do_test(db):
         def create_view_callback(response):
             eq(response.code, 201)
-            db.set({'data': 'data'}, create_doc_cb)
+            db.set({'data': 'data'}, create_1st_doc_cb)
+
+        def create_1st_doc_cb(doc):
+            db.set({'data': 'other'}, create_2nd_doc_cb)
+
+        def create_2nd_doc_cb(doc):
+            db.view('testview', 'all', load_view_cb, group='true')
+
+        def load_view_cb(result):
+            eq(result.error, False)
+            eq(list(result), [{'value': 1, 'key': 'data'},
+                              {'value': 1, 'key': 'other'}])
+            ioloop.stop()
 
         db.server._fetch(
             '%stestdb/_design/testview' % baseurl,
@@ -864,14 +870,8 @@ def test_load_view_with_grouping_reduce(baseurl, ioloop):
                 )
             )
 
-    def load_view_cb(result):
-        assert isinstance(result, list)
-        eq(result, [{'value': 1, 'key': 'data'},
-                    {'value': 1, 'key': 'other'}])
-        ioloop.stop()
-
     s = trombi.Server(baseurl, io_loop=ioloop)
-    s.create('testdb', callback=create_db_callback)
+    s.create('testdb', callback=do_test)
     ioloop.start()
 
 @with_ioloop
@@ -934,8 +934,9 @@ def test_temporary_view_empty_results(baseurl, ioloop):
         db.temporary_view(view_results, 'function(doc) { emit(null, doc); }')
 
     def view_results(result):
-        assert isinstance(result, list)
-        eq(result, [])
+        assert isinstance(result, trombi.ViewResult)
+        eq(result.error, False)
+        eq(list(result), [])
         ioloop.stop()
 
     s = trombi.Server(baseurl, io_loop=ioloop)
@@ -988,26 +989,26 @@ def test_temporary_view_nonempty_results(baseurl, ioloop):
 @with_ioloop
 @with_couchdb
 def test_temporary_view_with_reduce_fun(baseurl, ioloop):
-    def create_db_callback(db):
-        db.set({'value': 1}, functools.partial(doc_ready, db))
+    def do_test(db):
+        def doc_ready(doc):
+            db.set({'value': 2}, doc2_ready)
 
-    def doc_ready(db, doc):
-        db.set({'value': 2}, functools.partial(doc2_ready, db))
+        def doc2_ready(doc):
+            db.temporary_view(
+                view_results,
+                map_fun='function(doc) { emit(null, doc.value); }',
+                reduce_fun='function(key, values) { return sum(values); }'
+            )
 
-    def doc2_ready(db, doc):
-        db.temporary_view(
-            view_results,
-            map_fun='function(doc) { emit(null, doc.value); }',
-            reduce_fun='function(key, values) { return sum(values); }'
-        )
+        def view_results(result):
+            eq(result.error, False)
+            eq(list(result), [{'key': None, 'value': 3}])
+            ioloop.stop()
 
-    def view_results(results):
-        eq(results, [{'key': None, 'value': 3}])
-
-        ioloop.stop()
+        db.set({'value': 1}, doc_ready)
 
     s = trombi.Server(baseurl, io_loop=ioloop)
-    s.create('testdb', callback=create_db_callback)
+    s.create('testdb', callback=do_test)
     ioloop.start()
 
 

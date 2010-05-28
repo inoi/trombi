@@ -10,6 +10,8 @@
 # Asynchronous CouchDB client
 import re
 import urllib
+import collections
+
 from base64 import b64encode, b64decode
 from tornado.httpclient import AsyncHTTPClient
 try:
@@ -263,11 +265,9 @@ class Database(TrombiObject):
     def view(self, design_doc, viewname, callback, **kwargs):
         def _really_callback(response):
             if response.code == 200:
-                callback(json.loads(response.body)['rows'])
-            elif response.code == 404:
-                callback(TrombiError(trombi.errors.NOT_FOUND,
-                                     json.loads(response.body)['reason'],
-                                     ))
+                callback(
+                    ViewResult(json.loads(response.body))
+                    )
             else:
                 callback(_error_response(response))
 
@@ -281,7 +281,9 @@ class Database(TrombiObject):
                        language='javascript', **kwargs):
         def _really_callback(response):
             if response.code == 200:
-                callback(json.loads(response.body)['rows'])
+                callback(
+                    ViewResult(json.loads(response.body))
+                    )
             else:
                 callback(_error_response(response))
 
@@ -407,5 +409,21 @@ class Document(dict, TrombiObject):
             _really_callback,
             method='DELETE',
             )
+
+class ViewResult(TrombiObject, collections.Sequence):
+    def __init__(self, result):
+        self._total_rows = result.get('total_rows', len(result['rows']))
+        self._rows = result['rows']
+
+    def __len__(self):
+        return self._total_rows
+
+    def __iter__(self):
+        return iter(self._rows)
+
+    def __getitem__(self, key):
+        return self._rows[key]
+
+
 
 VALID_DB_NAME = re.compile(r'^[a-z][a-z0-9_$()+-/]*$')
