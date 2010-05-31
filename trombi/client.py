@@ -187,7 +187,7 @@ class Database(TrombiObject):
             doc_id, data, callback = args
         else:
             raise TypeError(
-                'Database.set expected 3 or 4 arguments, got %d' % len(args))
+                'Database.set expected 2 or 3 arguments, got %d' % len(args))
 
         if kwargs:
             if kwargs.keys() != ['attachments']:
@@ -198,7 +198,7 @@ class Database(TrombiObject):
                 else:
                     raise TypeError(
                         '%s is invalid keyword argument for this function' % (
-                            kargs.keys()[0]))
+                            kwargs.keys()[0]))
 
             attachments = kwargs['attachments']
         else:
@@ -396,7 +396,7 @@ class Document(collections.MutableMapping, TrombiObject):
             _copy_done,
             allow_nonstandard_methods=True,
             method='COPY',
-            headers={'Destination': urllib.quote(new_id, safe='')}
+            headers={'Destination': str(new_id)}
             )
 
     def attach(self, name, data, callback, type='text/plain'):
