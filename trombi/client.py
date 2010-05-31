@@ -43,6 +43,9 @@ class TrombiError(object):
         self.errno = errno
         self.msg = msg
 
+    def __str__(self):
+        return 'CouchDB reported an error: %s (%d)' % (self.msg, self.errno)
+
 
 class TrombiObject(object):
     """
