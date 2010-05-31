@@ -1014,7 +1014,7 @@ def test_copy_document(baseurl, ioloop):
             )
 
     def create_doc_callback(doc):
-        doc.copy_doc('newname', copy_done)
+        doc.copy('newname', copy_done)
 
     def copy_done(doc):
         eq(doc.id, 'newname')
@@ -1028,6 +1028,31 @@ def test_copy_document(baseurl, ioloop):
 
 @with_ioloop
 @with_couchdb
+def test_copy_document_exists(baseurl, ioloop):
+    def do_test(db):
+        def create_doc(doc):
+            db.set(
+                {'testvalue': 'something'},
+                copy_doc,
+                )
+
+        def copy_doc(doc):
+            doc.copy('newname', copy_done)
+
+        def copy_done(result):
+            eq(result.error, True)
+            eq(result.errno, trombi.errors.CONFLICT)
+            eq(result.msg, 'Document update conflict.')
+            ioloop.stop()
+
+        db.set('newname', {'something': 'else'}, create_doc)
+
+    s = trombi.Server(baseurl, io_loop=ioloop)
+    s.create('testdb', callback=do_test)
+    ioloop.start()
+
+@with_ioloop
+@with_couchdb
 def test_copy_document_with_attachments(baseurl, ioloop):
     def create_db_callback(db):
         db.set(
@@ -1037,7 +1062,7 @@ def test_copy_document_with_attachments(baseurl, ioloop):
             )
 
     def create_doc_callback(doc):
-        doc.copy_doc('newname', copy_done)
+        doc.copy('newname', copy_done)
 
     def copy_done(doc):
         eq(doc.id, 'newname')
@@ -1065,14 +1090,15 @@ def test_copy_loaded_document_with_attachments_false(baseurl, ioloop):
         doc.db.get(doc.id, got_doc)
 
     def got_doc(doc):
-        doc.copy_doc('newname', copy_done)
+        doc.copy('newname', copy_done)
 
     def copy_done(doc):
         eq(doc.id, 'newname')
         eq(dict(doc), {'testvalue': 'something'})
-        eq(doc.attachments.keys(), ['foo'])
-        eq(doc.attachments['foo']['content_type'], 'text/plain')
-        eq(doc.attachments['foo']['data'], 'YmFy')
+        doc.load_attachment('foo', loaded_attachment)
+
+    def loaded_attachment(attach):
+        eq(attach, 'bar')
         ioloop.stop()
 
     s = trombi.Server(baseurl, io_loop=ioloop)
@@ -1094,7 +1120,7 @@ def test_copy_loaded_document_with_attachments_true(baseurl, ioloop):
         doc.db.get(doc.id, got_doc, attachments=True)
 
     def got_doc(doc):
-        doc.copy_doc('newname', copy_done)
+        doc.copy('newname', copy_done)
 
     def copy_done(doc):
         eq(doc.id, 'newname')

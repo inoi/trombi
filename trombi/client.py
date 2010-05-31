@@ -376,33 +376,28 @@ class Document(collections.MutableMapping, TrombiObject):
         result.update(self.data)
         return result
 
-    def copy_doc(self, new_id, callback):
-        # WARNING: Due to the lack of support of custom, non-standard
-        # HTTP methods in tornado's AsyncHTTPClient, this operation is
-        # not atomic in any way, just a convenience wrapper.
-        #
-        # Also, this hogs memory as hell if there's a load of
-        # attachments. Please do know what you're doing if you use
-        # this function :p
+    def copy(self, new_id, callback):
         assert self.rev and self.id
 
-        def get_done(doc):
-            assert doc.id is not None
+        def _copy_done(response):
+            if response.code != 201:
+                callback(_error_response(response))
+                return
 
-            attachments = getattr(doc, 'attachments', None)
-            if attachments:
-                attachments = dict(
-                    (key, (val['content_type'], b64decode(val['data']))) for
-                    key, val in attachments.items())
+            content = json.loads(response.body)
+            doc = Document(self.db, self.data)
+            doc.attachments = self.attachments.copy()
+            doc.id = content['id']
+            doc.rev = content['rev']
+            callback(doc)
 
-            self.db.set(
-                doc.copy(),
-                doc_id=new_id,
-                callback=callback,
-                attachments=attachments
-                )
-
-        self.db.get(self.id, callback=get_done, attachments=True)
+        self.db._fetch(
+            '%s' % urllib.quote(self.id, safe=''),
+            _copy_done,
+            allow_nonstandard_methods=True,
+            method='COPY',
+            headers={'Destination': urllib.quote(new_id, safe='')}
+            )
 
     def attach(self, name, data, callback, type='text/plain'):
         def _really_callback(response):
