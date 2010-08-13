@@ -56,6 +56,9 @@ class TrombiObject(object):
     error = False
 
 def _error_response(response):
+    if response.code == 599:
+        return TrombiError(599, 'Unable to connect to CouchDB')
+
     try:
         content = json.loads(response.body)
     except ValueError:

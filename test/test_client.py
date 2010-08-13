@@ -35,6 +35,18 @@ def test_from_uri():
     eq(db.name, 'foobar')
 
 @with_ioloop
+def test_cannot_connect(ioloop):
+    def create_callback(db):
+        eq(db.error, True)
+        eq(db.errno, 599)
+        eq(db.msg, 'Unable to connect to CouchDB')
+        ioloop.stop()
+
+    s = trombi.Server('http://localhost:39998', io_loop=ioloop)
+    s.create('couchdb-database', callback=create_callback)
+    ioloop.start()
+
+@with_ioloop
 @with_couchdb
 def test_create_db(baseurl, ioloop):
     def create_callback(db):
