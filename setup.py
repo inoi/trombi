@@ -2,7 +2,7 @@ from distutils.core import setup
 
 setup(
     name='trombi',
-    version='0.5-1',
+    version='0.5-2',
     description='CouchDB client for Tornado\'s ioloop',
     license='Proprietary',
     author='Inoi Oy',
