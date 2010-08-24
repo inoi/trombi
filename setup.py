@@ -2,11 +2,23 @@ from distutils.core import setup
 
 setup(
     name='trombi',
-    version='0.5-2',
-    description='CouchDB client for Tornado\'s ioloop',
-    license='MIT License',
+    version='0.6',
+    description='CouchDB client for Tornado',
+    license='MIT',
     author='Inoi Oy',
     author_email='inoi@inoi.fi',
-    url='http://www.inoi.fi/',
+    maintainer='Jyrki Pulliainen',
+    maintainer_email='jyrki.pulliainen@inoi.fi',
+    url='http://github.com/inoi/trombi/',
     packages=['trombi'],
+    classifiers=[
+        'Development Status :: 4 - Beta',
+        'Environment :: Web Environment',
+        'Intended Audience :: Developers',
+        'License :: OSI Approved :: MIT License',
+        'Programming Language :: Python',
+        'Programming Language :: Python :: 2.6',
+        'Programming Language :: Python :: 2.7',
+        'Topic :: Database',
+        ]
 )
