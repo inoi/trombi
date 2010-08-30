@@ -78,9 +78,10 @@ Result objects
 Data objects
 ============
 
-These class represent different aspects of a CouchDB database. In case
-of an error the instance method calls the callback function with
-:class:`TrombiError` as an argument.
+These class represent different aspects of a CouchDB database. If not
+otherwise mentioned and in case of an error all the methods in the
+following classes call callback function with :class:`TrombiError` as
+an argument.
 
 .. class:: Server(baseurl[, io_loop=None])
 
