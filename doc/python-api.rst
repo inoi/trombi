@@ -2,9 +2,9 @@
 
 .. _python-api:
 
-**********
-Python API
-**********
+*************
+API Reference
+*************
 
 .. module:: trombi
 
@@ -75,13 +75,13 @@ Result objects
    dictionary like syntax and iterating over result rows using
    :func:`iter`.
 
-Data objects
-============
 
-These class represent different aspects of a CouchDB database. If not
-otherwise mentioned and in case of an error all the methods in the
-following classes call callback function with :class:`TrombiError` as
-an argument.
+Server
+======
+
+In case of an error, if not otherwise mentioned, all the following
+methods call callback function with :class:`TrombiError` as an
+argument.
 
 .. class:: Server(baseurl[, io_loop=None])
 
@@ -128,6 +128,14 @@ an argument.
 
       Lists available databases. On success, calls *callback* with a
       generator object containing all databases.
+
+
+Database
+========
+
+In case of an error, if not otherwise mentioned, all the following
+methods call callback function with :class:`TrombiError` as an
+argument.
 
 .. class:: Database(server, name)
 
@@ -212,6 +220,13 @@ an argument.
       :class:`ViewResult` as an argument. For more information
       on creating map function *map_fun* and reduce function
       *reduce_fun* see `CouchDB view API`_.
+
+Document
+========
+
+In case of an error, if not otherwise mentioned, all the following
+methods call callback function with :class:`TrombiError` as an
+argument.
 
 .. class:: Document(db, data)
 
