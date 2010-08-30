@@ -29,8 +29,9 @@ Result objects
 
    .. attribute:: errno
 
-      Error number. Unless something really odd happened, it's one of
-      the following:
+      Error number. Trombi error numbers are available in
+      :mod:`trombi.errors`. Unless something really odd happened,
+      it's one of the following:
 
       .. attribute:: errors.BAD_REQUEST
                      errors.NOT_FOUND
@@ -43,7 +44,7 @@ Result objects
       .. attribute:: errors.INVALID_DATABASE_NAME
 
          A custom error code to distinct from overloaded
-         `errors.SERVER_ERROR`. Means that the
+         :attr:`errors.SERVER_ERROR`. Means that the
          database name was invalid. **Note:** This can be returned
          without connecting to database, so your callback method might
          be called immediately without going back to the IOLoop.
