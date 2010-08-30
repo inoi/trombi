@@ -62,7 +62,7 @@ Result objects
 
    .. attribute:: error
 
-   Indicates succesful response, always *False*.
+      Indicates succesful response, always *False*.
 
 .. class:: ViewResult
 
