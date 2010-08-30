@@ -2,9 +2,9 @@
 
 .. _python-api:
 
-**********
-Python API
-**********
+*************
+API Reference
+*************
 
 .. module:: trombi
 
@@ -29,8 +29,9 @@ Result objects
 
    .. attribute:: errno
 
-      Error number. Unless something really odd happened, it's one of
-      the following:
+      Error number. Trombi error numbers are available in
+      :mod:`trombi.errors`. Unless something really odd happened,
+      it's one of the following:
 
       .. attribute:: errors.BAD_REQUEST
                      errors.NOT_FOUND
@@ -43,7 +44,7 @@ Result objects
       .. attribute:: errors.INVALID_DATABASE_NAME
 
          A custom error code to distinct from overloaded
-         `errors.SERVER_ERROR`. Means that the
+         :attr:`errors.SERVER_ERROR`. Means that the
          database name was invalid. **Note:** This can be returned
          without connecting to database, so your callback method might
          be called immediately without going back to the IOLoop.
@@ -62,7 +63,7 @@ Result objects
 
    .. attribute:: error
 
-   Indicates succesful response, always *False*.
+      Indicates succesful response, always *False*.
 
 .. class:: ViewResult
 
@@ -75,12 +76,13 @@ Result objects
    dictionary like syntax and iterating over result rows using
    :func:`iter`.
 
-Data objects
-============
 
-These class represent different aspects of a CouchDB database. In case
-of an error the instance method calls the callback function with
-:class:`TrombiError` as an argument.
+Server
+======
+
+In case of an error, if not otherwise mentioned, all the following
+methods call callback function with :class:`TrombiError` as an
+argument.
 
 .. class:: Server(baseurl[, io_loop=None])
 
@@ -127,6 +129,14 @@ of an error the instance method calls the callback function with
 
       Lists available databases. On success, calls *callback* with a
       generator object containing all databases.
+
+
+Database
+========
+
+In case of an error, if not otherwise mentioned, all the following
+methods call callback function with :class:`TrombiError` as an
+argument.
 
 .. class:: Database(server, name)
 
@@ -211,6 +221,13 @@ of an error the instance method calls the callback function with
       :class:`ViewResult` as an argument. For more information
       on creating map function *map_fun* and reduce function
       *reduce_fun* see `CouchDB view API`_.
+
+Document
+========
+
+In case of an error, if not otherwise mentioned, all the following
+methods call callback function with :class:`TrombiError` as an
+argument.
 
 .. class:: Document(db, data)
 

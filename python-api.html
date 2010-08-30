@@ -5,7 +5,7 @@
   <head>
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
     
-    <title>Python API &mdash; trombi v0.6 documentation</title>
+    <title>API Reference &mdash; trombi v0.6 documentation</title>
     <link rel="stylesheet" href="static/default.css" type="text/css" />
     <link rel="stylesheet" href="static/pygments.css" type="text/css" />
     <script type="text/javascript">
@@ -45,7 +45,7 @@
           <div class="body">
             
   <div class="section" id="module-trombi">
-<span id="python-api"></span><h1>Python API<a class="headerlink" href="#module-trombi" title="Permalink to this headline">¶</a></h1>
+<span id="python-api"></span><h1>API Reference<a class="headerlink" href="#module-trombi" title="Permalink to this headline">¶</a></h1>
 <p>This module consists of two different classes indicating query result,
 <a title="trombi.TrombiObject" class="reference internal" href="#trombi.TrombiObject"><tt class="xref docutils literal"><span class="pre">TrombiObject</span></tt></a> and <a title="trombi.TrombiError" class="reference internal" href="#trombi.TrombiError"><tt class="xref docutils literal"><span class="pre">TrombiError</span></tt></a>, first for the
 succesful API response and the latter for errorneus API response. All
@@ -65,8 +65,9 @@ classes representing different data objects of <a class="reference external" hre
 <dl class="attribute">
 <dt id="trombi.TrombiError.errno">
 <tt class="descname">errno</tt><a class="headerlink" href="#trombi.TrombiError.errno" title="Permalink to this definition">¶</a></dt>
-<dd><p>Error number. Unless something really odd happened, it&#8217;s one of
-the following:</p>
+<dd><p>Error number. Trombi error numbers are available in
+<tt class="xref docutils literal"><span class="pre">trombi.errors</span></tt>. Unless something really odd happened,
+it&#8217;s one of the following:</p>
 <dl class="attribute">
 <dt id="trombi.TrombiError.errors.BAD_REQUEST">
 <tt class="descclassname">errors.</tt><tt class="descname">BAD_REQUEST</tt><a class="headerlink" href="#trombi.TrombiError.errors.BAD_REQUEST" title="Permalink to this definition">¶</a></dt>
@@ -84,7 +85,7 @@ the following:</p>
 <dt id="trombi.TrombiError.errors.INVALID_DATABASE_NAME">
 <tt class="descclassname">errors.</tt><tt class="descname">INVALID_DATABASE_NAME</tt><a class="headerlink" href="#trombi.TrombiError.errors.INVALID_DATABASE_NAME" title="Permalink to this definition">¶</a></dt>
 <dd>A custom error code to distinct from overloaded
-<cite>errors.SERVER_ERROR</cite>. Means that the
+<a title="trombi.TrombiError.errors.SERVER_ERROR" class="reference internal" href="#trombi.TrombiError.errors.SERVER_ERROR"><tt class="xref docutils literal"><span class="pre">errors.SERVER_ERROR</span></tt></a>. Means that the
 database name was invalid. <strong>Note:</strong> This can be returned
 without connecting to database, so your callback method might
 be called immediately without going back to the IOLoop.</dd></dl>
@@ -124,12 +125,11 @@ dictionary like syntax and iterating over result rows using
 </dd></dl>
 
 </div>
-<div class="section" id="data-objects">
-<h2>Data objects<a class="headerlink" href="#data-objects" title="Permalink to this headline">¶</a></h2>
-<p>These class represent different aspects of a CouchDB database. If not
-otherwise mentioned and in case of an error all the methods in the
-following classes call callback function with <a title="trombi.TrombiError" class="reference internal" href="#trombi.TrombiError"><tt class="xref docutils literal"><span class="pre">TrombiError</span></tt></a> as
-an argument.</p>
+<div class="section" id="server">
+<h2>Server<a class="headerlink" href="#server" title="Permalink to this headline">¶</a></h2>
+<p>In case of an error, if not otherwise mentioned, all the following
+methods call callback function with <a title="trombi.TrombiError" class="reference internal" href="#trombi.TrombiError"><tt class="xref docutils literal"><span class="pre">TrombiError</span></tt></a> as an
+argument.</p>
 <dl class="class">
 <dt id="trombi.Server">
 <em class="property">class </em><tt class="descclassname">trombi.</tt><tt class="descname">Server</tt><big>(</big><em>baseurl</em><span class="optional">[</span>, <em>io_loop=None</em><span class="optional">]</span><big>)</big><a class="headerlink" href="#trombi.Server" title="Permalink to this definition">¶</a></dt>
@@ -183,6 +183,12 @@ generator object containing all databases.</dd></dl>
 
 </dd></dl>
 
+</div>
+<div class="section" id="database">
+<h2>Database<a class="headerlink" href="#database" title="Permalink to this headline">¶</a></h2>
+<p>In case of an error, if not otherwise mentioned, all the following
+methods call callback function with <a title="trombi.TrombiError" class="reference internal" href="#trombi.TrombiError"><tt class="xref docutils literal"><span class="pre">TrombiError</span></tt></a> as an
+argument.</p>
 <dl class="class">
 <dt id="trombi.Database">
 <em class="property">class </em><tt class="descclassname">trombi.</tt><tt class="descname">Database</tt><big>(</big><em>server</em>, <em>name</em><big>)</big><a class="headerlink" href="#trombi.Database" title="Permalink to this definition">¶</a></dt>
@@ -266,6 +272,12 @@ on creating map function <em>map_fun</em> and reduce function
 
 </dd></dl>
 
+</div>
+<div class="section" id="document">
+<h2>Document<a class="headerlink" href="#document" title="Permalink to this headline">¶</a></h2>
+<p>In case of an error, if not otherwise mentioned, all the following
+methods call callback function with <a title="trombi.TrombiError" class="reference internal" href="#trombi.TrombiError"><tt class="xref docutils literal"><span class="pre">TrombiError</span></tt></a> as an
+argument.</p>
 <dl class="class">
 <dt id="trombi.Document">
 <em class="property">class </em><tt class="descclassname">trombi.</tt><tt class="descname">Document</tt><big>(</big><em>db</em>, <em>data</em><big>)</big><a class="headerlink" href="#trombi.Document" title="Permalink to this definition">¶</a></dt>
@@ -346,9 +358,11 @@ with this <a title="trombi.Document" class="reference internal" href="#trombi.Do
         <div class="sphinxsidebarwrapper">
             <h3><a href="index.html">Table Of Contents</a></h3>
             <ul>
-<li><a class="reference external" href="#">Python API</a><ul>
+<li><a class="reference external" href="#">API Reference</a><ul>
 <li><a class="reference external" href="#result-objects">Result objects</a></li>
-<li><a class="reference external" href="#data-objects">Data objects</a></li>
+<li><a class="reference external" href="#server">Server</a></li>
+<li><a class="reference external" href="#database">Database</a></li>
+<li><a class="reference external" href="#document">Document</a></li>
 </ul>
 </li>
 </ul>
