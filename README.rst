@@ -20,6 +20,14 @@ For running tests:
 * nose_
 
 
+Documentation
+-------------
+
+Documentation created using Sphinx_ is available in *doc/* directory.
+Compiling documentation requires version 0.6.x of Sphinx.
+
+Online documentation can be seen on `Github pages`_.
+
 Example program
 ---------------
 
@@ -73,3 +81,6 @@ information.
 
 .. _nose: http://somethingaboutorange.com/mrl/projects/nose/
 
+.. _sphinx: http://sphinx.pocoo.org/
+
+.. _github pages: http://inoi.github.com/trombi/
