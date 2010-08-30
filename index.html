@@ -20,7 +20,7 @@
     <script type="text/javascript" src="static/jquery.js"></script>
     <script type="text/javascript" src="static/doctools.js"></script>
     <link rel="top" title="trombi v0.6 documentation" href="#" />
-    <link rel="next" title="Introduction" href="intro.html" /> 
+    <link rel="next" title="Python API" href="python-api.html" /> 
   </head>
   <body>
     <div class="related">
@@ -33,7 +33,7 @@
           <a href="modindex.html" title="Global Module Index"
              accesskey="M">modules</a> |</li>
         <li class="right" >
-          <a href="intro.html" title="Introduction"
+          <a href="python-api.html" title="Python API"
              accesskey="N">next</a> |</li>
         <li><a href="#">trombi v0.6 documentation</a> &raquo;</li> 
       </ul>
@@ -48,13 +48,27 @@
 <h1>Welcome to trombi&#8217;s documentation!<a class="headerlink" href="#welcome-to-trombi-s-documentation" title="Permalink to this headline">¶</a></h1>
 <p>Contents:</p>
 <ul>
-<li class="toctree-l1"><a class="reference external" href="intro.html">Introduction</a></li>
 <li class="toctree-l1"><a class="reference external" href="python-api.html">Python API</a><ul>
 <li class="toctree-l2"><a class="reference external" href="python-api.html#result-objects">Result objects</a></li>
 <li class="toctree-l2"><a class="reference external" href="python-api.html#data-objects">Data objects</a></li>
 </ul>
 </li>
 </ul>
+</div>
+<div class="section" id="introduction">
+<h1>Introduction<a class="headerlink" href="#introduction" title="Permalink to this headline">¶</a></h1>
+<p>Trombi provides an asynchronous <a class="reference external" href="http://couchdb.apache.org/">CouchDB</a> API for <a class="reference external" href="http://tornadoweb.org/">tornado web server</a>.
+Motivation behind trombi was the lack of an asynchronous API to
+CouchDB. As tornado ships with excellent <tt class="xref docutils literal"><span class="pre">AsyncHTTPClient</span></tt>
+and the CouchDB has an excellent RESTful API, making our own seemed
+like a good idea.</p>
+<p>Idea of trombi is to ship a simple to use API (in terms of simple
+asynchronous APIs, of course) that requires minimum effort to use the
+CouchDB in a tornado application. API has evolved a bit in the history
+and probably will evolve in the future, so brace yourself for future
+API changes, if you plan to use the bleeding edge trombi. The API
+might still have some rough edges too but it is currently used in
+production environment.</p>
 </div>
 <div class="section" id="indices-and-tables">
 <h1>Indices and tables<a class="headerlink" href="#indices-and-tables" title="Permalink to this headline">¶</a></h1>
@@ -76,12 +90,13 @@
 <li><a class="reference external" href="#">Welcome to trombi&#8217;s documentation!</a><ul>
 </ul>
 </li>
+<li><a class="reference external" href="#introduction">Introduction</a></li>
 <li><a class="reference external" href="#indices-and-tables">Indices and tables</a></li>
 </ul>
 
             <h4>Next topic</h4>
-            <p class="topless"><a href="intro.html"
-                                  title="next chapter">Introduction</a></p>
+            <p class="topless"><a href="python-api.html"
+                                  title="next chapter">Python API</a></p>
             <h3>This Page</h3>
             <ul class="this-page-menu">
               <li><a href="sources/index.txt"
@@ -114,7 +129,7 @@
           <a href="modindex.html" title="Global Module Index"
              >modules</a> |</li>
         <li class="right" >
-          <a href="intro.html" title="Introduction"
+          <a href="python-api.html" title="Python API"
              >next</a> |</li>
         <li><a href="#">trombi v0.6 documentation</a> &raquo;</li> 
       </ul>
