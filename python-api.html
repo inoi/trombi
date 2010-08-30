@@ -1,0 +1,401 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>Python API &mdash; trombi v0.6 documentation</title>
+    <link rel="stylesheet" href="static/default.css" type="text/css" />
+    <link rel="stylesheet" href="static/pygments.css" type="text/css" />
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '#',
+        VERSION:     '0.6',
+        COLLAPSE_MODINDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="static/jquery.js"></script>
+    <script type="text/javascript" src="static/doctools.js"></script>
+    <link rel="top" title="trombi v0.6 documentation" href="index.html" />
+    <link rel="prev" title="Introduction" href="intro.html" /> 
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="modindex.html" title="Global Module Index"
+             accesskey="M">modules</a> |</li>
+        <li class="right" >
+          <a href="intro.html" title="Introduction"
+             accesskey="P">previous</a> |</li>
+        <li><a href="index.html">trombi v0.6 documentation</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <div class="section" id="module-trombi">
+<span id="python-api"></span><h1>Python API<a class="headerlink" href="#module-trombi" title="Permalink to this headline">¶</a></h1>
+<p>This module consists of two different classes indicating query result,
+<a title="trombi.TrombiObject" class="reference internal" href="#trombi.TrombiObject"><tt class="xref docutils literal"><span class="pre">TrombiObject</span></tt></a> and <a title="trombi.TrombiError" class="reference internal" href="#trombi.TrombiError"><tt class="xref docutils literal"><span class="pre">TrombiError</span></tt></a>, first for the
+succesful API response and the latter for errorneus API response. All
+classes representing different data objects of <a class="reference external" href="http://couchdb.apache.org/">CouchDB</a> subclass
+<a title="trombi.TrombiObject" class="reference internal" href="#trombi.TrombiObject"><tt class="xref docutils literal"><span class="pre">TrombiObject</span></tt></a>.</p>
+<div class="section" id="result-objects">
+<h2>Result objects<a class="headerlink" href="#result-objects" title="Permalink to this headline">¶</a></h2>
+<dl class="class">
+<dt id="trombi.TrombiError">
+<em class="property">class </em><tt class="descclassname">trombi.</tt><tt class="descname">TrombiError</tt><a class="headerlink" href="#trombi.TrombiError" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returned upon errorneus CouchDB API call.</p>
+<dl class="attribute">
+<dt id="trombi.TrombiError.error">
+<tt class="descname">error</tt><a class="headerlink" href="#trombi.TrombiError.error" title="Permalink to this definition">¶</a></dt>
+<dd>Indicates that an error happened. Always <em>True</em>.</dd></dl>
+
+<dl class="attribute">
+<dt id="trombi.TrombiError.errno">
+<tt class="descname">errno</tt><a class="headerlink" href="#trombi.TrombiError.errno" title="Permalink to this definition">¶</a></dt>
+<dd><p>Error number. Unless something really odd happened, it&#8217;s one of
+the following:</p>
+<dl class="attribute">
+<dt id="trombi.TrombiError.errors.BAD_REQUEST">
+<tt class="descclassname">errors.</tt><tt class="descname">BAD_REQUEST</tt><a class="headerlink" href="#trombi.TrombiError.errors.BAD_REQUEST" title="Permalink to this definition">¶</a></dt>
+<dt id="trombi.TrombiError.errors.NOT_FOUND">
+<tt class="descclassname">errors.</tt><tt class="descname">NOT_FOUND</tt><a class="headerlink" href="#trombi.TrombiError.errors.NOT_FOUND" title="Permalink to this definition">¶</a></dt>
+<dt id="trombi.TrombiError.errors.CONFLICT">
+<tt class="descclassname">errors.</tt><tt class="descname">CONFLICT</tt><a class="headerlink" href="#trombi.TrombiError.errors.CONFLICT" title="Permalink to this definition">¶</a></dt>
+<dt id="trombi.TrombiError.errors.PRECONDITION_FAILED">
+<tt class="descclassname">errors.</tt><tt class="descname">PRECONDITION_FAILED</tt><a class="headerlink" href="#trombi.TrombiError.errors.PRECONDITION_FAILED" title="Permalink to this definition">¶</a></dt>
+<dt id="trombi.TrombiError.errors.SERVER_ERROR">
+<tt class="descclassname">errors.</tt><tt class="descname">SERVER_ERROR</tt><a class="headerlink" href="#trombi.TrombiError.errors.SERVER_ERROR" title="Permalink to this definition">¶</a></dt>
+<dd>These map to HTTP error codes respectively.</dd></dl>
+
+<dl class="attribute">
+<dt id="trombi.TrombiError.errors.INVALID_DATABASE_NAME">
+<tt class="descclassname">errors.</tt><tt class="descname">INVALID_DATABASE_NAME</tt><a class="headerlink" href="#trombi.TrombiError.errors.INVALID_DATABASE_NAME" title="Permalink to this definition">¶</a></dt>
+<dd>A custom error code to distinct from overloaded
+<cite>errors.SERVER_ERROR</cite>. Means that the
+database name was invalid. <strong>Note:</strong> This can be returned
+without connecting to database, so your callback method might
+be called immediately without going back to the IOLoop.</dd></dl>
+
+</dd></dl>
+
+<dl class="attribute">
+<dt id="trombi.TrombiError.msg">
+<tt class="descname">msg</tt><a class="headerlink" href="#trombi.TrombiError.msg" title="Permalink to this definition">¶</a></dt>
+<dd>Textual representation of error. This might be <a class="reference external" href="http://json.org/">JSON</a> as returned
+by CouchDB, but trombi makes no effort trying to decode it.</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="trombi.TrombiObject">
+<em class="property">class </em><tt class="descclassname">trombi.</tt><tt class="descname">TrombiObject</tt><a class="headerlink" href="#trombi.TrombiObject" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returned upon succesful CouchDB call. This is also superclass for
+all data object classes presented below.</p>
+<dl class="attribute">
+<dt id="trombi.TrombiObject.error">
+<tt class="descname">error</tt><a class="headerlink" href="#trombi.TrombiObject.error" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<p>Indicates succesful response, always <em>False</em>.</p>
+</dd></dl>
+
+<dl class="class">
+<dt id="trombi.ViewResult">
+<em class="property">class </em><tt class="descclassname">trombi.</tt><tt class="descname">ViewResult</tt><a class="headerlink" href="#trombi.ViewResult" title="Permalink to this definition">¶</a></dt>
+<dd><p>A special result object that represents a succesful view result.
+Subclasses <a title="trombi.TrombiObject" class="reference internal" href="#trombi.TrombiObject"><tt class="xref docutils literal"><span class="pre">TrombiObject</span></tt></a> and
+<tt class="xref docutils literal"><span class="pre">collections.Sequence</span></tt>.</p>
+<p>Due to the subclassing of <tt class="xref docutils literal"><span class="pre">collections.Sequence</span></tt>, behaves
+kind of like a tuple. Support <tt class="xref docutils literal"><span class="pre">len()</span></tt>, accessing items with
+dictionary like syntax and iterating over result rows using
+<tt class="xref docutils literal"><span class="pre">iter()</span></tt>.</p>
+</dd></dl>
+
+</div>
+<div class="section" id="data-objects">
+<h2>Data objects<a class="headerlink" href="#data-objects" title="Permalink to this headline">¶</a></h2>
+<p>These class represent different aspects of a CouchDB database. In case
+of an error the instance method calls the callback function with
+<a title="trombi.TrombiError" class="reference internal" href="#trombi.TrombiError"><tt class="xref docutils literal"><span class="pre">TrombiError</span></tt></a> as an argument.</p>
+<dl class="class">
+<dt id="trombi.Server">
+<em class="property">class </em><tt class="descclassname">trombi.</tt><tt class="descname">Server</tt><big>(</big><em>baseurl</em><span class="optional">[</span>, <em>io_loop=None</em><span class="optional">]</span><big>)</big><a class="headerlink" href="#trombi.Server" title="Permalink to this definition">¶</a></dt>
+<dd><p>Represents the connection to a CouchDB server. Subclass of
+<a title="trombi.TrombiObject" class="reference internal" href="#trombi.TrombiObject"><tt class="xref docutils literal"><span class="pre">TrombiObject</span></tt></a>.</p>
+<p>Has one required argument <em>baseurl</em> which is an URI to CouchDB
+database. If the <em>baseurl</em> ends in a slash (<tt class="docutils literal"><span class="pre">/</span></tt>), it is removed.</p>
+<p>To ease testing a custom <tt class="xref docutils literal"><span class="pre">tornado.ioloop.IOLoop</span></tt> instance
+can be passed as a keyword argument.</p>
+<dl class="attribute">
+<dt id="trombi.Server.baseurl">
+<tt class="descname">baseurl</tt><a class="headerlink" href="#trombi.Server.baseurl" title="Permalink to this definition">¶</a></dt>
+<dt id="trombi.Server.io_loop">
+<tt class="descname">io_loop</tt><a class="headerlink" href="#trombi.Server.io_loop" title="Permalink to this definition">¶</a></dt>
+<dd>These two store the given arguments.</dd></dl>
+
+<dl class="attribute">
+<dt id="trombi.Server.error">
+<tt class="descname">error</tt><a class="headerlink" href="#trombi.Server.error" title="Permalink to this definition">¶</a></dt>
+<dd>Indicates an error, always <em>False</em>.</dd></dl>
+
+<dl class="method">
+<dt id="trombi.Server.create">
+<tt class="descname">create</tt><big>(</big><em>name</em>, <em>callback</em><big>)</big><a class="headerlink" href="#trombi.Server.create" title="Permalink to this definition">¶</a></dt>
+<dd><p>Creates a new database. Has two required arguments, the <em>name</em>
+of the new database and the <em>callback</em> function.</p>
+<p>On success the callback function is called with newly created
+<a title="trombi.Database" class="reference internal" href="#trombi.Database"><tt class="xref docutils literal"><span class="pre">Database</span></tt></a> as an argument.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="trombi.Server.get">
+<tt class="descname">get</tt><big>(</big><em>name</em>, <em>callback</em><span class="optional">[</span>, <em>create=False</em><span class="optional">]</span><big>)</big><a class="headerlink" href="#trombi.Server.get" title="Permalink to this definition">¶</a></dt>
+<dd>Tries to open database named <em>name</em>. Optional keyword argument
+<em>create</em> can be given to indicate that if the database does not
+exist, trombi tries to create it. As with
+<a title="trombi.Server.create" class="reference internal" href="#trombi.Server.create"><tt class="xref docutils literal"><span class="pre">create()</span></tt></a>, calls the <em>callback</em> with a
+<a title="trombi.Database" class="reference internal" href="#trombi.Database"><tt class="xref docutils literal"><span class="pre">Database</span></tt></a> on success.</dd></dl>
+
+<dl class="method">
+<dt id="trombi.Server.delete">
+<tt class="descname">delete</tt><big>(</big><em>name</em>, <em>callback</em><big>)</big><a class="headerlink" href="#trombi.Server.delete" title="Permalink to this definition">¶</a></dt>
+<dd>Deletes a database named <em>name</em>. On success, calls <em>callback</em>
+with an empty <a title="trombi.TrombiObject" class="reference internal" href="#trombi.TrombiObject"><tt class="xref docutils literal"><span class="pre">TrombiObject</span></tt></a> as an argument.</dd></dl>
+
+<dl class="method">
+<dt id="trombi.Server.list">
+<tt class="descname">list</tt><big>(</big><em>callback</em><big>)</big><a class="headerlink" href="#trombi.Server.list" title="Permalink to this definition">¶</a></dt>
+<dd>Lists available databases. On success, calls <em>callback</em> with a
+generator object containing all databases.</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="trombi.Database">
+<em class="property">class </em><tt class="descclassname">trombi.</tt><tt class="descname">Database</tt><big>(</big><em>server</em>, <em>name</em><big>)</big><a class="headerlink" href="#trombi.Database" title="Permalink to this definition">¶</a></dt>
+<dd><p>Represents a CouchDB database. Has two required argument, <em>server</em>
+and <em>name</em> where <em>server</em> denotes the <a title="trombi.Server" class="reference internal" href="#trombi.Server"><tt class="xref docutils literal"><span class="pre">Server</span></tt></a> where
+database is and <em>name</em> is the name of the database.</p>
+<p>Normally there&#8217;s no need to create <a title="trombi.Database" class="reference internal" href="#trombi.Database"><tt class="xref docutils literal"><span class="pre">Database</span></tt></a> objects
+as they are created via <a title="trombi.Server.create" class="reference internal" href="#trombi.Server.create"><tt class="xref docutils literal"><span class="pre">Server.create()</span></tt></a> and
+<a title="trombi.Server.get" class="reference internal" href="#trombi.Server.get"><tt class="xref docutils literal"><span class="pre">Server.get()</span></tt></a>. Subclass of <a title="trombi.TrombiObject" class="reference internal" href="#trombi.TrombiObject"><tt class="xref docutils literal"><span class="pre">TrombiObject</span></tt></a>.</p>
+<dl class="method">
+<dt id="trombi.Database.set">
+<tt class="descname">set</tt><big>(</big><span class="optional">[</span><em>doc_id</em><span class="optional">]</span>, <em>data</em>, <em>callback</em><span class="optional">[</span>, <em>attachments=None</em><span class="optional">]</span><big>)</big><a class="headerlink" href="#trombi.Database.set" title="Permalink to this definition">¶</a></dt>
+<dd><p>Creates a new or modifies an existing document in the database.
+If called with three arguments, the first argument, <em>doc_id</em> is
+the document id of the new or existing document. If only two
+arguments are given the document id is generated by the
+database. <em>data</em> is the data to the document, either a Python
+<tt class="xref docutils literal"><span class="pre">dict</span></tt> or an instance of <a title="trombi.Document" class="reference internal" href="#trombi.Document"><tt class="xref docutils literal"><span class="pre">Document</span></tt></a>.
+<em>doc_id</em> can be omitted if <em>data</em> is an existing document.</p>
+<p>This method makes distinction between creating a new document
+and updating an existing by inspecting the <em>data</em> argument. If
+<em>data</em> is a <a title="trombi.Document" class="reference internal" href="#trombi.Document"><tt class="xref docutils literal"><span class="pre">Document</span></tt></a> with attributes <em>rev</em> and
+<em>id</em> set, it tries to update existing document. Otherwise it
+tries to create a new document containing <em>data</em>.</p>
+<p>Inline attachments can be passed to function with optional
+keyword argument <em>attachments</em>. <em>attachments</em> is a <tt class="xref docutils literal"><span class="pre">dict</span></tt>
+with a format somewhat similiar to CouchDB:</p>
+<div class="highlight-python"><pre>{&lt;attachment_name&gt;: (&lt;content_type&gt;, &lt;data&gt;)}</pre>
+</div>
+<p>If <em>content_type</em> is None, <tt class="docutils literal"><span class="pre">text/plain</span></tt> is assumed.</p>
+<p>On succesful creation or update the <em>callback</em> is called with
+<a title="trombi.Document" class="reference internal" href="#trombi.Document"><tt class="xref docutils literal"><span class="pre">Document</span></tt></a> as an argument.</p>
+</dd></dl>
+
+<dl class="method">
+<dt>
+<tt class="descname">get(doc_id, callback[, attachments=False)</tt></dt>
+<dd><p>Loads a document <em>doc_id</em> from the database. If optional keyword
+argument <em>attachments</em> is given the inline attachments of the
+document are loaded.</p>
+<p>On success calls <em>callback</em> with <a title="trombi.Document" class="reference internal" href="#trombi.Document"><tt class="xref docutils literal"><span class="pre">Document</span></tt></a> as an
+argument.</p>
+<p><strong>Note:</strong> If there&#8217;s no document with document id <em>doc_id</em> this
+function calls <em>callback</em> with argument <em>None</em>. Implementer
+should always check for <em>None</em> before checking the <em>error</em>
+attribute of the result object.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="trombi.Database.delete">
+<tt class="descname">delete</tt><big>(</big><em>doc</em>, <em>callback</em><big>)</big><a class="headerlink" href="#trombi.Database.delete" title="Permalink to this definition">¶</a></dt>
+<dd><p>Deletes a document in database. <em>doc</em> has to be a
+<a title="trombi.Document" class="reference internal" href="#trombi.Document"><tt class="xref docutils literal"><span class="pre">Document</span></tt></a> with <em>rev</em> and <em>id</em> set or the deletion
+will fail.</p>
+<p>On success, calls <em>callback</em> with <a title="trombi.Database" class="reference internal" href="#trombi.Database"><tt class="xref docutils literal"><span class="pre">Database</span></tt></a> (i.e.
+<em>self</em>) as an argument.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="trombi.Database.view">
+<tt class="descname">view</tt><big>(</big><em>design_doc</em>, <em>viewname</em>, <em>callback</em><span class="optional">[</span>, <em>**kwargs</em><span class="optional">]</span><big>)</big><a class="headerlink" href="#trombi.Database.view" title="Permalink to this definition">¶</a></dt>
+<dd><p>Fetches view results from database. Both <em>design_doc</em> and
+<em>viewname</em> are string, which identify the view. Additional
+keyword arguments can be given and those are all sent as query
+parameters to CouchDB. For more information, see <a class="reference external" href="http://wiki.apache.org/couchdb/HTTP_view_API">CouchDB view
+API</a>.</p>
+<p><strong>Note:</strong> trombi does not yet support creating views through any
+special mechanism. Views should be created using
+<a title="trombi.Database.set" class="reference internal" href="#trombi.Database.set"><tt class="xref docutils literal"><span class="pre">Database.set()</span></tt></a>.</p>
+<p>On success, a <a title="trombi.ViewResult" class="reference internal" href="#trombi.ViewResult"><tt class="xref docutils literal"><span class="pre">ViewResult</span></tt></a> object is passed to
+<em>callback</em>.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="trombi.Database.temporary_view">
+<tt class="descname">temporary_view</tt><big>(</big><em>callback</em>, <em>map_fun</em><span class="optional">[</span>, <em>reduce_fun=None</em>, <em>language='javascript'</em>, <em>**kwargs</em><span class="optional">]</span><big>)</big><a class="headerlink" href="#trombi.Database.temporary_view" title="Permalink to this definition">¶</a></dt>
+<dd>Generates a temporary view and on success calls <em>callback</em> with
+<a title="trombi.ViewResult" class="reference internal" href="#trombi.ViewResult"><tt class="xref docutils literal"><span class="pre">ViewResult</span></tt></a> as an argument. For more information
+on creating map function <em>map_fun</em> and reduce function
+<em>reduce_fun</em> see <a class="reference external" href="http://wiki.apache.org/couchdb/HTTP_view_API">CouchDB view API</a>.</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="trombi.Document">
+<em class="property">class </em><tt class="descclassname">trombi.</tt><tt class="descname">Document</tt><big>(</big><em>db</em>, <em>data</em><big>)</big><a class="headerlink" href="#trombi.Document" title="Permalink to this definition">¶</a></dt>
+<dd><p>This class represents a CouchDB document. This subclasses both
+<tt class="xref docutils literal"><span class="pre">collections.MutableMapping</span></tt> and
+<a title="trombi.TrombiObject" class="reference internal" href="#trombi.TrombiObject"><tt class="xref docutils literal"><span class="pre">TrombiObject</span></tt></a>. Has two mandatory arguments, a
+<a title="trombi.Database" class="reference internal" href="#trombi.Database"><tt class="xref docutils literal"><span class="pre">Database</span></tt></a> intance <em>db</em> and <em>data</em>, which is a
+representation of document data as <tt class="xref docutils literal"><span class="pre">dict</span></tt>.</p>
+<dl class="attribute">
+<dt id="trombi.Document.db">
+<tt class="descname">db</tt><a class="headerlink" href="#trombi.Document.db" title="Permalink to this definition">¶</a></dt>
+<dt id="trombi.Document.data">
+<tt class="descname">data</tt><a class="headerlink" href="#trombi.Document.data" title="Permalink to this definition">¶</a></dt>
+<dd>These two attribute store the given arguments</dd></dl>
+
+<dl class="attribute">
+<dt id="trombi.Document.id">
+<tt class="descname">id</tt><a class="headerlink" href="#trombi.Document.id" title="Permalink to this definition">¶</a></dt>
+<dt id="trombi.Document.rev">
+<tt class="descname">rev</tt><a class="headerlink" href="#trombi.Document.rev" title="Permalink to this definition">¶</a></dt>
+<dt id="trombi.Document.attachments">
+<tt class="descname">attachments</tt><a class="headerlink" href="#trombi.Document.attachments" title="Permalink to this definition">¶</a></dt>
+<dd>These contain CouchDB document id, revision and possible
+attachments.</dd></dl>
+
+<p>Normally there&#8217;s no need to create Document objects as they are
+received as results of several different <a title="trombi.Database" class="reference internal" href="#trombi.Database"><tt class="xref docutils literal"><span class="pre">Database</span></tt></a>
+operations.</p>
+<p>Document behaves like a <tt class="xref docutils literal"><span class="pre">dict</span></tt> (not exactly, but not far
+anyway), as it implements an abstract base class
+<tt class="xref docutils literal"><span class="pre">collections.MutableMapping</span></tt>.</p>
+<p>It supports <tt class="xref docutils literal"><span class="pre">len()</span></tt>, setting and getting values using the
+similiar notation as in dictionaries, e.g. <tt class="docutils literal"><span class="pre">doc[key]</span> <span class="pre">=</span> <span class="pre">val</span></tt>. It
+also implements <tt class="xref docutils literal"><span class="pre">__contains__()</span></tt> so the presence of a key can
+be inspected using <tt class="docutils literal"><span class="pre">in</span></tt> operator.</p>
+<dl class="method">
+<dt id="trombi.Document.copy">
+<tt class="descname">copy</tt><big>(</big><em>new_id</em>, <em>callback</em><big>)</big><a class="headerlink" href="#trombi.Document.copy" title="Permalink to this definition">¶</a></dt>
+<dd><p>Creates a copy of this document under new document id <em>new_id</em>.
+This operation is atomic as it is implemented using the custom
+<tt class="docutils literal"><span class="pre">COPY</span></tt> method provided by CouchDB.</p>
+<p>On success the <em>callback</em> function is called with a
+<a title="trombi.Document" class="reference internal" href="#trombi.Document"><tt class="xref docutils literal"><span class="pre">Document</span></tt></a> denoting the newly created copy.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="trombi.Document.attach">
+<tt class="descname">attach</tt><big>(</big><em>name</em>, <em>data</em>, <em>callback</em><span class="optional">[</span>, <em>type='text/plain'</em><span class="optional">]</span><big>)</big><a class="headerlink" href="#trombi.Document.attach" title="Permalink to this definition">¶</a></dt>
+<dd><p>Creates an attachment of name <em>name</em> to the document. <em>data</em> is
+the content of the attachment. These attachments are not so
+called inline attachments. <em>type</em> defaults to <tt class="docutils literal"><span class="pre">text/plain</span></tt>.</p>
+<p>On success, <em>callback</em> is called with this
+<a title="trombi.Document" class="reference internal" href="#trombi.Document"><tt class="xref docutils literal"><span class="pre">Document</span></tt></a> as an argument.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="trombi.Document.load_attachment">
+<tt class="descname">load_attachment</tt><big>(</big><em>name</em>, <em>callback</em><big>)</big><a class="headerlink" href="#trombi.Document.load_attachment" title="Permalink to this definition">¶</a></dt>
+<dd>Loads an attachment named <em>name</em>. On success the <em>callback</em> is
+called with the attachment data as an argument.</dd></dl>
+
+<dl class="method">
+<dt id="trombi.Document.delete_attachment">
+<tt class="descname">delete_attachment</tt><big>(</big><em>name</em>, <em>callback</em><big>)</big><a class="headerlink" href="#trombi.Document.delete_attachment" title="Permalink to this definition">¶</a></dt>
+<dd>Deletes an attachment named <em>name</em>. On success, calls <em>callback</em>
+with this <a title="trombi.Document" class="reference internal" href="#trombi.Document"><tt class="xref docutils literal"><span class="pre">Document</span></tt></a> as an argument.</dd></dl>
+
+</dd></dl>
+
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+            <h3><a href="index.html">Table Of Contents</a></h3>
+            <ul>
+<li><a class="reference external" href="#">Python API</a><ul>
+<li><a class="reference external" href="#result-objects">Result objects</a></li>
+<li><a class="reference external" href="#data-objects">Data objects</a></li>
+</ul>
+</li>
+</ul>
+
+            <h4>Previous topic</h4>
+            <p class="topless"><a href="intro.html"
+                                  title="previous chapter">Introduction</a></p>
+            <h3>This Page</h3>
+            <ul class="this-page-menu">
+              <li><a href="sources/python-api.txt"
+                     rel="nofollow">Show Source</a></li>
+            </ul>
+          <div id="searchbox" style="display: none">
+            <h3>Quick search</h3>
+              <form class="search" action="search.html" method="get">
+                <input type="text" name="q" size="18" />
+                <input type="submit" value="Go" />
+                <input type="hidden" name="check_keywords" value="yes" />
+                <input type="hidden" name="area" value="default" />
+              </form>
+              <p class="searchtip" style="font-size: 90%">
+              Enter search terms or a module, class or function name.
+              </p>
+          </div>
+          <script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="modindex.html" title="Global Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="intro.html" title="Introduction"
+             >previous</a> |</li>
+        <li><a href="index.html">trombi v0.6 documentation</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer">
+      &copy; Copyright 2010, Inoi Oy.
+      Created using <a href="http://sphinx.pocoo.org/">Sphinx</a> 0.6.4.
+    </div>
+  </body>
+</html>
