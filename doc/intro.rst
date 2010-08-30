@@ -15,4 +15,8 @@ API changes, if you plan to use the bleeding edge trombi. The API
 might still have some rough edges too but it is currently used in
 production environment.
 
+.. _CouchDB: http://couchdb.apache.org/
+
+.. _tornado web server: http://tornadoweb.org/
+
 
