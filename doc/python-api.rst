@@ -95,7 +95,7 @@ In case of an error, if not otherwise mentioned, all the following
 methods call callback function with :class:`TrombiError` as an
 argument.
 
-.. class:: Server(baseurl[, io_loop=None])
+.. class:: Server(baseurl[, fetch_args={}, io_loop=None])
 
    Represents the connection to a CouchDB server. Subclass of
    :class:`TrombiObject`.
@@ -114,6 +114,14 @@ argument.
    .. attribute:: error
 
       Indicates an error, always *False*.
+
+   .. attribute:: fetch_args
+
+      Provides a way to pass in additional keyword arguments to the
+      tornado's :meth:`AsyncHTTPClient.fetch()` call. In particular,
+      by passing in ``auth_username`` and ``auth_password`` as keyword
+      arguments, we can now use CouchDB servers using HTTP Basic
+      Authentication.
 
    .. method:: create(name, callback)
 

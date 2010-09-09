@@ -95,12 +95,12 @@ def _error_response(response):
         return TrombiError(response.code, content)
 
 class Server(TrombiObject):
-    def __init__(self, baseurl, io_loop=None):
+    def __init__(self, baseurl, fetch_args={}, io_loop=None):
         self.error = False
         self.baseurl = baseurl
         if self.baseurl[-1] == '/':
             self.baseurl = self.baseurl[:-1]
-
+        self._fetch_args = fetch_args
         self.io_loop = io_loop
 
     def _invalid_db_name(self, name):
@@ -111,6 +111,7 @@ class Server(TrombiObject):
 
     def _fetch(self, *args, **kwargs):
         # just a convenince wrapper
+        kwargs.update(self._fetch_args)
         AsyncHTTPClient(io_loop=self.io_loop).fetch(*args, **kwargs)
 
     def create(self, name, callback):
