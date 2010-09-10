@@ -861,7 +861,7 @@ def test_load_view_with_grouping_reduce(baseurl, ioloop):
             db.set({'data': 'other'}, create_2nd_doc_cb)
 
         def create_2nd_doc_cb(doc):
-            db.view('testview', 'all', load_view_cb, group='true')
+            db.view('testview', 'all', load_view_cb, group=True)
 
         def load_view_cb(result):
             eq(result.error, False)

@@ -80,6 +80,12 @@ class TrombiResult(TrombiObject):
         super(TrombiResult, self).__init__()
 
 
+def _jsonize_params(params):
+    for key, value in params.iteritems():
+        params[key] = json.dumps(value)
+    return urllib.urlencode(params)
+
+
 def _error_response(response):
     if response.code == 599:
         return TrombiError(599, 'Unable to connect to CouchDB')
@@ -312,7 +318,7 @@ class Database(TrombiObject):
 
         url = '_design/%s/_view/%s' % (design_doc, viewname)
         if kwargs:
-            url = '%s?%s' % (url, urllib.urlencode(kwargs))
+            url = '%s?%s' % (url, _jsonize_params(kwargs))
 
         self._fetch(url, _really_callback)
 
@@ -325,7 +331,7 @@ class Database(TrombiObject):
 
         url = '_design/%s/_list/%s/%s/' % (design_doc, listname, viewname)
         if kwargs:
-            url = '%s?%s' % (url, urllib.urlencode(kwargs))
+            url = '%s?%s' % (url, _jsonize_params(kwargs))
 
         self._fetch(url, _really_callback)
 
@@ -341,7 +347,7 @@ class Database(TrombiObject):
 
         url = '_temp_view'
         if kwargs:
-            url = '%s?%s' % (url, urllib.urlencode(kwargs))
+            url = '%s?%s' % (url, _jsonize_params(kwargs))
 
         body = {'map': map_fun, 'language': language}
         if reduce_fun:
