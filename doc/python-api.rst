@@ -221,9 +221,9 @@ argument.
 
       Fetches view results from database. Both *design_doc* and
       *viewname* are string, which identify the view. Additional
-      keyword arguments can be given and those are all sent as query
-      parameters to CouchDB. For more information, see `CouchDB view
-      API`_.
+      keyword arguments can be given and those are all sent as JSON
+      encoded query parameters to CouchDB. For more information, see
+      `CouchDB view API`_.
 
       **Note:** trombi does not yet support creating views through any
       special mechanism. Views should be created using
@@ -245,12 +245,18 @@ argument.
       *callback*. Note that the response content is not defined in any
       way, it solely depends on the list function.
 
+      Additional keyword arguments can be given and those are all sent
+      as JSON encoded query parameters to CouchDB.
+
    .. method:: temporary_view(callback, map_fun[, reduce_fun=None, language='javascript', **kwargs])
 
       Generates a temporary view and on success calls *callback* with
       :class:`ViewResult` as an argument. For more information
       on creating map function *map_fun* and reduce function
       *reduce_fun* see `CouchDB view API`_.
+
+      Additional keyword arguments can be given and those are all sent
+      as JSON encoded query parameters to CouchDB.
 
 Document
 ========
