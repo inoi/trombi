@@ -83,7 +83,7 @@ Result objects
    :class:`collections.Sequence`.
 
    Due to the subclassing of :class:`collections.Sequence`, behaves
-   kind of like a tuple. Support :func:`len`, accessing items with
+   kind of like a tuple. Supports :func:`len`, accessing items with
    dictionary like syntax and iterating over result rows using
    :func:`iter`.
 
