@@ -35,7 +35,7 @@ except ImportError:
 
 import trombi.errors
 
-def from_uri(uri, io_loop=None):
+def from_uri(uri, fetch_args={}, io_loop=None):
     import urlparse
 
     p = urlparse.urlparse(uri)
@@ -45,7 +45,7 @@ def from_uri(uri, io_loop=None):
         raise ValueError('Invalid database address: %s (only http:// is supported)' % uri)
 
     baseurl = urlparse.urlunsplit((p.scheme, p.netloc, '', '', ''))
-    server = Server(baseurl, io_loop)
+    server = Server(baseurl, fetch_args, io_loop=io_loop)
 
     db_name = p.path.lstrip('/').rstrip('/')
     return Database(server, db_name)
