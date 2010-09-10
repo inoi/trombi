@@ -65,6 +65,17 @@ Result objects
 
       Indicates succesful response, always *False*.
 
+.. class:: TrombiResult
+
+   A generic result indicating a succesfull call. Used for example in
+   :meth:`Database.list`. Subclasses
+   :class:`TrombiObject`.
+
+   .. attribute:: content
+
+      Contains the result of the query. The result format is not
+      specified.
+
 .. class:: ViewResult
 
    A special result object that represents a succesful view result.
@@ -214,6 +225,17 @@ argument.
       *callback*.
 
       .. _CouchDB view API: http://wiki.apache.org/couchdb/HTTP_view_API
+
+   .. method:: list(design_doc, listname, viewname, callback[, **kwargs])
+
+      Fetches view, identified by *design_doc* and *listname*, results
+      and filters them using the *listname* list function. Additional
+      keyword arguments can be given and they are sent as query
+      parameters to CouchDB.
+
+      On success, a :class:`TrombiResult` object is passed to
+      *callback*. Note that the response content is not defined in any
+      way, it solely depends on the list function.
 
    .. method:: temporary_view(callback, map_fun[, reduce_fun=None, language='javascript', **kwargs])
 

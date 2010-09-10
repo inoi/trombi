@@ -69,6 +69,17 @@ class TrombiObject(object):
     """
     error = False
 
+class TrombiResult(TrombiObject):
+    """
+    A generic result objects for Trombi queries that do not have any
+    formal representation.
+    """
+
+    def __init__(self, data):
+        self.content = data
+        super(TrombiResult, self).__init__()
+
+
 def _error_response(response):
     if response.code == 599:
         return TrombiError(599, 'Unable to connect to CouchDB')
@@ -299,6 +310,19 @@ class Database(TrombiObject):
                 callback(_error_response(response))
 
         url = '_design/%s/_view/%s' % (design_doc, viewname)
+        if kwargs:
+            url = '%s?%s' % (url, urllib.urlencode(kwargs))
+
+        self._fetch(url, _really_callback)
+
+    def list(self, design_doc, listname, viewname, callback, **kwargs):
+        def _really_callback(response):
+            if response.code == 200:
+                callback(TrombiResult(response.body))
+            else:
+                callback(_error_response(response))
+
+        url = '_design/%s/_list/%s/%s/' % (design_doc, listname, viewname)
         if kwargs:
             url = '%s?%s' % (url, urllib.urlencode(kwargs))
 
