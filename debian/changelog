@@ -1,3 +1,9 @@
+python-trombi (0.7-0) lucid; urgency=low
+
+  * Add correct Debian version
+
+ -- Jyrki Pulliainen <jyrki.pulliainen@inoi.fi>  Tue, 14 Sep 2010 12:20:08 +0300
+
 python-trombi (0.7) lucid; urgency=low
 
   * Initial debianization
