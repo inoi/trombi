@@ -7,7 +7,7 @@ Welcome to trombi's documentation!
 ==================================
 
 This is an API documentation for trombi |version|, last updated on
-|date|.
+|today|.
 
 Contents:
 

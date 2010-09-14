@@ -65,6 +65,17 @@ Result objects
 
       Indicates succesful response, always *False*.
 
+.. class:: TrombiResult
+
+   A generic result indicating a succesfull call. Used for example in
+   :meth:`Database.list`. Subclasses
+   :class:`TrombiObject`.
+
+   .. attribute:: content
+
+      Contains the result of the query. The result format is not
+      specified.
+
 .. class:: ViewResult
 
    A special result object that represents a succesful view result.
@@ -72,7 +83,7 @@ Result objects
    :class:`collections.Sequence`.
 
    Due to the subclassing of :class:`collections.Sequence`, behaves
-   kind of like a tuple. Support :func:`len`, accessing items with
+   kind of like a tuple. Supports :func:`len`, accessing items with
    dictionary like syntax and iterating over result rows using
    :func:`iter`.
 
@@ -84,7 +95,7 @@ In case of an error, if not otherwise mentioned, all the following
 methods call callback function with :class:`TrombiError` as an
 argument.
 
-.. class:: Server(baseurl[, io_loop=None])
+.. class:: Server(baseurl[, fetch_args={}, io_loop=None])
 
    Represents the connection to a CouchDB server. Subclass of
    :class:`TrombiObject`.
@@ -103,6 +114,14 @@ argument.
    .. attribute:: error
 
       Indicates an error, always *False*.
+
+   .. attribute:: fetch_args
+
+      Provides a way to pass in additional keyword arguments to the
+      tornado's :meth:`AsyncHTTPClient.fetch()` call. In particular,
+      by passing in ``auth_username`` and ``auth_password`` as keyword
+      arguments, we can now use CouchDB servers using HTTP Basic
+      Authentication.
 
    .. method:: create(name, callback)
 
@@ -202,9 +221,9 @@ argument.
 
       Fetches view results from database. Both *design_doc* and
       *viewname* are string, which identify the view. Additional
-      keyword arguments can be given and those are all sent as query
-      parameters to CouchDB. For more information, see `CouchDB view
-      API`_.
+      keyword arguments can be given and those are all sent as JSON
+      encoded query parameters to CouchDB. For more information, see
+      `CouchDB view API`_.
 
       **Note:** trombi does not yet support creating views through any
       special mechanism. Views should be created using
@@ -215,12 +234,29 @@ argument.
 
       .. _CouchDB view API: http://wiki.apache.org/couchdb/HTTP_view_API
 
+   .. method:: list(design_doc, listname, viewname, callback[, **kwargs])
+
+      Fetches view, identified by *design_doc* and *listname*, results
+      and filters them using the *listname* list function. Additional
+      keyword arguments can be given and they are sent as query
+      parameters to CouchDB.
+
+      On success, a :class:`TrombiResult` object is passed to
+      *callback*. Note that the response content is not defined in any
+      way, it solely depends on the list function.
+
+      Additional keyword arguments can be given and those are all sent
+      as JSON encoded query parameters to CouchDB.
+
    .. method:: temporary_view(callback, map_fun[, reduce_fun=None, language='javascript', **kwargs])
 
       Generates a temporary view and on success calls *callback* with
       :class:`ViewResult` as an argument. For more information
       on creating map function *map_fun* and reduce function
       *reduce_fun* see `CouchDB view API`_.
+
+      Additional keyword arguments can be given and those are all sent
+      as JSON encoded query parameters to CouchDB.
 
 Document
 ========
