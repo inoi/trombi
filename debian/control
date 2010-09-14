@@ -1,0 +1,17 @@
+Source: python-trombi
+Section: python
+Priority: optional
+Maintainer: Jyrki Pulliainen <jyrki.pulliainen@inoi.fi>
+Uploaders: Petri Lehtinen <petri.lehtinen@inoi.fi>
+Build-Depends: debhelper (>= 7.0.50), python-support (>= 0.90),
+ python (>= 2.6)
+Standards-Version: 3.9.1
+
+Package: python-trombi
+Architecture: all
+Depends: ${misc:Depends}, ${python:Depends}, python (>= 2.6),
+ python-tornado (>= 1.0)
+Description: CouchDB client for Tornado's ioloop
+ Trombi is an asynchronous CouchDB client that uses Tornado's ioloop
+ (or event loop). It supports the majority of the CouchDB's RESTful
+ API and provides a callback-based interface for the user.
