@@ -109,6 +109,9 @@ class Server(TrombiObject):
         if self.baseurl[-1] == '/':
             self.baseurl = self.baseurl[:-1]
         self._fetch_args = fetch_args
+        self._default_args = {
+            'headers': HTTPHeaders({'Content-Type': 'application/json'})
+            }
         self.io_loop = io_loop
 
     def _invalid_db_name(self, name):
@@ -119,7 +122,8 @@ class Server(TrombiObject):
 
     def _fetch(self, *args, **kwargs):
         # just a convenince wrapper
-        fetch_args = self._fetch_args.copy()
+        fetch_args = self._default_args.copy()
+        fetch_args.update(self._fetch_args)
         fetch_args.update(kwargs)
         AsyncHTTPClient(io_loop=self.io_loop).fetch(*args, **fetch_args)
 
