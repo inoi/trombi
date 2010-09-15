@@ -307,6 +307,11 @@ argument.
       On success the *callback* function is called with a
       :class:`Document` denoting the newly created copy.
 
+   .. method:: raw()
+
+      Returns the document's content as a raw dict, containing
+      CouchDB's internal variables like _id and _rev.
+
    .. method:: attach(name, data, callback[, type='text/plain'])
 
       Creates an attachment of name *name* to the document. *data* is

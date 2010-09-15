@@ -289,7 +289,7 @@ class Database(TrombiObject):
             url,
             _really_callback,
             method=method,
-            body=json.dumps(doc._as_dict()),
+            body=json.dumps(doc.raw()),
             )
 
     def get(self, doc_id, callback, attachments=False):
@@ -420,6 +420,15 @@ class Document(collections.MutableMapping, TrombiObject):
         del self.data[key]
 
     def _as_dict(self):
+        import warnings
+        warnings.warn(
+            'Document._as_dict is deprecated and will be removed '\
+                'in the future. You have been warned!',
+            DeprecationWarning
+            )
+        return self.raw()
+
+    def raw(self):
         result = {}
         if self.id:
             result['_id'] = self.id
