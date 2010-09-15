@@ -28,6 +28,8 @@ import collections
 
 from base64 import b64encode, b64decode
 from tornado.httpclient import AsyncHTTPClient
+from tornado.httputil import HTTPHeaders
+
 try:
     import json
 except ImportError:
@@ -117,8 +119,9 @@ class Server(TrombiObject):
 
     def _fetch(self, *args, **kwargs):
         # just a convenince wrapper
-        kwargs.update(self._fetch_args)
-        AsyncHTTPClient(io_loop=self.io_loop).fetch(*args, **kwargs)
+        fetch_args = self._fetch_args.copy()
+        fetch_args.update(kwargs)
+        AsyncHTTPClient(io_loop=self.io_loop).fetch(*args, **fetch_args)
 
     def create(self, name, callback):
         if not VALID_DB_NAME.match(name):
