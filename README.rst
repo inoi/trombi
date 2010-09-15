@@ -28,6 +28,9 @@ Compiling documentation requires version 0.6.x of Sphinx.
 
 Online documentation can be seen on `Github pages`_.
 
+Issues are reported in `Github`_ and there's also `a mailing list`_
+available in Google Groups.
+
 Example program
 ---------------
 
@@ -84,3 +87,7 @@ information.
 .. _sphinx: http://sphinx.pocoo.org/
 
 .. _github pages: http://inoi.github.com/trombi/
+
+.. _Github: http://github.com/inoi/trombi/
+
+.. _a mailing list: http://groups.google.com/group/python-trombi?lnk=gcimh
