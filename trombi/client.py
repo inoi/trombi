@@ -174,8 +174,8 @@ class Server(TrombiObject):
             '%s/%s' % (self.baseurl, name),
             _really_callback,
             )
-    def delete(self, name, callback):
 
+    def delete(self, name, callback):
         def _really_callback(response):
             if response.code == 200:
                 callback(TrombiObject())
@@ -364,7 +364,7 @@ class Database(TrombiObject):
                     body=json.dumps(body),
                     headers={'Content-Type': 'application/json'})
 
-    def delete(self, doc, callback):
+    def delete(self, data, callback):
         def _really_callback(response):
             try:
                 data = json.loads(response.body)
@@ -375,6 +375,11 @@ class Database(TrombiObject):
                 callback(self)
             else:
                 callback(_error_response(response))
+
+        if isinstance(data, Document):
+            doc = data
+        else:
+            doc = Document(self, data)
 
         doc_id = urllib.quote(doc.id, safe='')
         self._fetch(
