@@ -83,9 +83,10 @@ class TrombiResult(TrombiObject):
 
 
 def _jsonize_params(params):
+    result = {}
     for key, value in params.iteritems():
-        params[key] = json.dumps(value)
-    return urllib.urlencode(params)
+        result[key] = json.dumps(value)
+    return urllib.urlencode(result)
 
 
 def _error_response(response):
@@ -327,7 +328,13 @@ class Database(TrombiObject):
         if kwargs:
             url = '%s?%s' % (url, _jsonize_params(kwargs))
 
-        self._fetch(url, _really_callback)
+        if 'keys' in kwargs:
+            self._fetch(url, _really_callback,
+                        method='POST',
+                        body=json.dumps({'keys': kwargs['keys']})
+                        )
+        else:
+            self._fetch(url, _really_callback)
 
     def list(self, design_doc, listname, viewname, callback, **kwargs):
         def _really_callback(response):

@@ -222,8 +222,10 @@ argument.
       Fetches view results from database. Both *design_doc* and
       *viewname* are string, which identify the view. Additional
       keyword arguments can be given and those are all sent as JSON
-      encoded query parameters to CouchDB. For more information, see
-      `CouchDB view API`_.
+      encoded query parameters to CouchDB with one exception. If a
+      keyword argument ``keys`` is given the query is transformed to
+      *POST* and the payload will be JSON object ``{"keys": <keys>}``.
+      For more information, see `CouchDB view API`_.
 
       **Note:** trombi does not yet support creating views through any
       special mechanism. Views should be created using

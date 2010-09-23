@@ -891,6 +891,48 @@ def test_load_view_with_grouping_reduce(baseurl, ioloop):
     s.create('testdb', callback=do_test)
     ioloop.start()
 
+
+@with_ioloop
+@with_couchdb
+def test_load_view_with_keys(baseurl, ioloop):
+    def do_test(db):
+        def create_view_callback(response):
+            eq(response.code, 201)
+            db.set({'data': 'data'}, create_1st_doc_cb)
+
+        def create_1st_doc_cb(doc):
+            db.set({'data': 'other'}, create_2nd_doc_cb)
+
+        def create_2nd_doc_cb(doc):
+            db.view('testview', 'all', load_view_cb, keys=['data'])
+
+        def load_view_cb(result):
+            eq(result.error, False)
+            eq(len(result), 1)
+            eq(result[0]['key'], 'data')
+            ioloop.stop()
+
+        db.server._fetch(
+            '%stestdb/_design/testview' % baseurl,
+            create_view_callback,
+            method='PUT',
+            body=json.dumps(
+                {
+                    'language': 'javascript',
+                    'views': {
+                        'all': {
+                            'map': 'function (doc) { emit(doc.data, doc) }',
+                            }
+                        }
+                    }
+                )
+            )
+
+    s = trombi.Server(baseurl, io_loop=ioloop)
+    s.create('testdb', callback=do_test)
+    ioloop.start()
+
+
 @with_ioloop
 @with_couchdb
 def test_load_view_no_design_doc(baseurl, ioloop):
