@@ -526,7 +526,7 @@ class ViewResult(TrombiObject, collections.Sequence):
         self._rows = result['rows']
 
     def __len__(self):
-        return self._total_rows
+        return len(self._rows)
 
     def __iter__(self):
         return iter(self._rows)
