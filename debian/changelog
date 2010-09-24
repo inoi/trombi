@@ -1,8 +1,14 @@
+python-trombi (0.8-0) lucid; urgency=low
+
+  * New upstream version
+
+ -- Jyrki Pulliainen <jyrki.pulliainen@inoi.fi>  Fri, 24 Sep 2010 13:26:56 +0300
+
 python-trombi (0.7-0) lucid; urgency=low
 
   * Add correct Debian version
 
- -- Jyrki Pulliainen <jyrki.pulliainen@inoi.fi>  Tue, 14 Sep 2010 12:20:08 +0300
+ -- Jyrki Pulliainen <jyrki.pulliainen@inoi.fi>  Fri, 24 Sep 2010 13:26:39 +0300
 
 python-trombi (0.7) lucid; urgency=low
 
