@@ -66,7 +66,7 @@ def test_create_db(baseurl, ioloop):
         eq(db.error, False)
         assert isinstance(db, trombi.Database)
         f = urllib.urlopen('%s_all_dbs' % baseurl)
-        eq(json.load(f), [db.name])
+        assert 'couchdb-database' in json.load(f)
         ioloop.stop()
 
 
@@ -90,7 +90,7 @@ def test_db_exists(baseurl, ioloop):
         eq(result.errno, trombi.errors.PRECONDITION_FAILED)
         eq(result.msg, "Database already exists: 'couchdb-database'")
         f = urllib.urlopen('%s_all_dbs' % baseurl)
-        eq(json.load(f), ['couchdb-database'])
+        assert 'couchdb-database' in json.load(f)
         ioloop.stop()
 
     s.create('couchdb-database', callback=first_callback)
@@ -147,7 +147,7 @@ def test_delete_db(baseurl, ioloop):
     def delete_callback(result):
         eq(result.error, False)
         f = urllib.urlopen('%s_all_dbs' % baseurl)
-        eq(json.load(f), [])
+        eq([x for x in json.load(f) if not x.startswith('_')], [])
         ioloop.stop()
 
     s.create('testdatabase', callback=create_callback)
@@ -180,7 +180,7 @@ def test_list_databases(baseurl, ioloop):
         assert all(isinstance(x, trombi.Database) for x in databases)
         eq(
             set(['testdb2', 'testdb1']),
-            set([x.name for x in databases]),
+            set([x.name for x in databases if not x.name.startswith('_')]),
             )
         ioloop.stop()
 
@@ -891,6 +891,48 @@ def test_load_view_with_grouping_reduce(baseurl, ioloop):
     s.create('testdb', callback=do_test)
     ioloop.start()
 
+
+@with_ioloop
+@with_couchdb
+def test_load_view_with_keys(baseurl, ioloop):
+    def do_test(db):
+        def create_view_callback(response):
+            eq(response.code, 201)
+            db.set({'data': 'data'}, create_1st_doc_cb)
+
+        def create_1st_doc_cb(doc):
+            db.set({'data': 'other'}, create_2nd_doc_cb)
+
+        def create_2nd_doc_cb(doc):
+            db.view('testview', 'all', load_view_cb, keys=['data'])
+
+        def load_view_cb(result):
+            eq(result.error, False)
+            eq(len(result), 1)
+            eq(result[0]['key'], 'data')
+            ioloop.stop()
+
+        db.server._fetch(
+            '%stestdb/_design/testview' % baseurl,
+            create_view_callback,
+            method='PUT',
+            body=json.dumps(
+                {
+                    'language': 'javascript',
+                    'views': {
+                        'all': {
+                            'map': 'function (doc) { emit(doc.data, doc) }',
+                            }
+                        }
+                    }
+                )
+            )
+
+    s = trombi.Server(baseurl, io_loop=ioloop)
+    s.create('testdb', callback=do_test)
+    ioloop.start()
+
+
 @with_ioloop
 @with_couchdb
 def test_load_view_no_design_doc(baseurl, ioloop):
@@ -1170,7 +1212,6 @@ def test_list_with_results(baseurl, ioloop):
             db.list('testview', 'data', 'all', load_view_cb)
 
         def load_view_cb(result):
-            print result
             eq(result.error, False)
             eq(result.content, 'data')
             ioloop.stop()
@@ -1200,4 +1241,31 @@ function(head, req) {
 
     s = trombi.Server(baseurl, io_loop=ioloop)
     s.create('testdb', callback=do_test)
+    ioloop.start()
+
+@with_ioloop
+@with_couchdb
+def test_create_document_raw(baseurl, ioloop):
+    def create_db_callback(db):
+        db.set(
+            {'testvalue': 'something'},
+            create_doc_callback,
+            )
+
+    def create_doc_callback(doc):
+        eq(doc.error, False)
+        assert isinstance(doc, trombi.Document)
+        assert doc.id
+        assert doc.rev
+
+        eq(doc.raw(),
+           {
+                '_id': doc.id,
+                '_rev': doc.rev,
+                'testvalue': 'something',
+                })
+        ioloop.stop()
+
+    s = trombi.Server(baseurl, io_loop=ioloop)
+    s.create('testdb', callback=create_db_callback)
     ioloop.start()

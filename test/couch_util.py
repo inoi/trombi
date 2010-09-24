@@ -84,6 +84,9 @@ def with_couchdb(func):
         # Delete the old database if it exists
         server = couchdb.client.Server(baseurl)
         for database in server:
+            if database.startswith('_'):
+                # Special databases like _users
+                continue
             del server[database]
 
         return func(baseurl, *args, **kwargs)

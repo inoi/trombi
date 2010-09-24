@@ -28,6 +28,8 @@ import collections
 
 from base64 import b64encode, b64decode
 from tornado.httpclient import AsyncHTTPClient
+from tornado.httputil import HTTPHeaders
+
 try:
     import json
 except ImportError:
@@ -81,9 +83,10 @@ class TrombiResult(TrombiObject):
 
 
 def _jsonize_params(params):
+    result = {}
     for key, value in params.iteritems():
-        params[key] = json.dumps(value)
-    return urllib.urlencode(params)
+        result[key] = json.dumps(value)
+    return urllib.urlencode(result)
 
 
 def _error_response(response):
@@ -107,6 +110,9 @@ class Server(TrombiObject):
         if self.baseurl[-1] == '/':
             self.baseurl = self.baseurl[:-1]
         self._fetch_args = fetch_args
+        self._default_args = {
+            'headers': HTTPHeaders({'Content-Type': 'application/json'})
+            }
         self.io_loop = io_loop
 
     def _invalid_db_name(self, name):
@@ -117,8 +123,10 @@ class Server(TrombiObject):
 
     def _fetch(self, *args, **kwargs):
         # just a convenince wrapper
-        kwargs.update(self._fetch_args)
-        AsyncHTTPClient(io_loop=self.io_loop).fetch(*args, **kwargs)
+        fetch_args = self._default_args.copy()
+        fetch_args.update(self._fetch_args)
+        fetch_args.update(kwargs)
+        AsyncHTTPClient(io_loop=self.io_loop).fetch(*args, **fetch_args)
 
     def create(self, name, callback):
         if not VALID_DB_NAME.match(name):
@@ -167,8 +175,8 @@ class Server(TrombiObject):
             '%s/%s' % (self.baseurl, name),
             _really_callback,
             )
-    def delete(self, name, callback):
 
+    def delete(self, name, callback):
         def _really_callback(response):
             if response.code == 200:
                 callback(TrombiObject())
@@ -282,7 +290,7 @@ class Database(TrombiObject):
             url,
             _really_callback,
             method=method,
-            body=json.dumps(doc._as_dict()),
+            body=json.dumps(doc.raw()),
             )
 
     def get(self, doc_id, callback, attachments=False):
@@ -320,7 +328,13 @@ class Database(TrombiObject):
         if kwargs:
             url = '%s?%s' % (url, _jsonize_params(kwargs))
 
-        self._fetch(url, _really_callback)
+        if 'keys' in kwargs:
+            self._fetch(url, _really_callback,
+                        method='POST',
+                        body=json.dumps({'keys': kwargs['keys']})
+                        )
+        else:
+            self._fetch(url, _really_callback)
 
     def list(self, design_doc, listname, viewname, callback, **kwargs):
         def _really_callback(response):
@@ -357,7 +371,7 @@ class Database(TrombiObject):
                     body=json.dumps(body),
                     headers={'Content-Type': 'application/json'})
 
-    def delete(self, doc, callback):
+    def delete(self, data, callback):
         def _really_callback(response):
             try:
                 data = json.loads(response.body)
@@ -368,6 +382,11 @@ class Database(TrombiObject):
                 callback(self)
             else:
                 callback(_error_response(response))
+
+        if isinstance(data, Document):
+            doc = data
+        else:
+            doc = Document(self, data)
 
         doc_id = urllib.quote(doc.id, safe='')
         self._fetch(
@@ -413,6 +432,15 @@ class Document(collections.MutableMapping, TrombiObject):
         del self.data[key]
 
     def _as_dict(self):
+        import warnings
+        warnings.warn(
+            'Document._as_dict is deprecated and will be removed '\
+                'in the future. You have been warned!',
+            DeprecationWarning
+            )
+        return self.raw()
+
+    def raw(self):
         result = {}
         if self.id:
             result['_id'] = self.id
@@ -505,7 +533,7 @@ class ViewResult(TrombiObject, collections.Sequence):
         self._rows = result['rows']
 
     def __len__(self):
-        return self._total_rows
+        return len(self._rows)
 
     def __iter__(self):
         return iter(self._rows)
