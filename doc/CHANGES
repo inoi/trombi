@@ -1,0 +1,26 @@
+0.8
+---
+
+Views:
+
+  * Add support for passing keys argument to a view
+  * Correctly count the length of the view using self._rows
+
+Documents:
+
+  * Allow deletion of bare documents
+  * Implement raw() method for returning raw CouchDB data
+
+    This introduces a small, upcoming API change by deprecating
+    Document._as_dict.
+
+Server:
+
+  * Add correct Content-Type header to fetch
+  * Correctly overwrite fetch_args with kwargs, not the other way around
+
+Other:
+
+  * tests: Modify tests so that they work with 1.0.0+ CouchDB
+  * readme: Add mention about issue tracker and mailing list
+  * Add this CHANGES document
