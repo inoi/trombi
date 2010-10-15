@@ -324,7 +324,11 @@ class Database(TrombiObject):
             else:
                 callback(_error_response(response))
 
-        url = '_design/%s/_view/%s' % (design_doc, viewname)
+        if not design_doc and viewname == '_all_docs':
+            url = '_all_docs'
+        else:
+            url = '_design/%s/_view/%s' % (design_doc, viewname)
+
         if kwargs:
             url = '%s?%s' % (url, _jsonize_params(kwargs))
 
