@@ -68,6 +68,11 @@ Example program
 
 More usage examples can be found in tests.
 
+Authors
+-------
+
+Possibly incomplete list of authors can be found in AUTHORS file.
+
 License
 -------
 
