@@ -1,8 +1,9 @@
 # Sphinx inventory version 1
 # Project: trombi
-# Version: 0.7
+# Version: 0.8
 trombi mod python-api.html
 trombi.TrombiError.errors.SERVER_ERROR attribute python-api.html
+trombi.Document.raw method python-api.html
 trombi.Document.attach method python-api.html
 trombi.Server.get method python-api.html
 trombi.Document.rev attribute python-api.html
