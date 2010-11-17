@@ -535,6 +535,7 @@ class ViewResult(TrombiObject, collections.Sequence):
     def __init__(self, result):
         self._total_rows = result.get('total_rows', len(result['rows']))
         self._rows = result['rows']
+        self.offset = result.get('offset', 0)
 
     def __len__(self):
         return len(self._rows)
