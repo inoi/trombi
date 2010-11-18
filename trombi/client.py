@@ -404,6 +404,35 @@ class Database(TrombiObject):
             method='DELETE',
             )
 
+    def bulk_docs(self, data, callback, all_or_nothing=False):
+        def _really_callback(response):
+            if response.code == 200 or response.code == 201:
+                try:
+                    content = json.loads(response.body)
+                except ValueError:
+                    callback(TrombiErrorResponse(response.code, response.body))
+                callback(BulkResult(content))
+            else:
+                callback(_error_response(response))
+
+        docs = []
+        for element in data:
+            if isinstance(element, Document):
+                docs.append(element.raw())
+            else:
+                docs.append(element)
+
+        payload = {'docs': docs}
+        if all_or_nothing is True:
+            payload['all_or_nothing'] = True
+
+        self._fetch(
+            '_bulk_docs',
+            _really_callback,
+            method='POST',
+            body=json.dumps(payload),
+            )
+
 
 class Document(collections.MutableMapping, TrombiObject):
     def __init__(self, db, data):
@@ -535,6 +564,47 @@ class Document(collections.MutableMapping, TrombiObject):
             _really_callback,
             method='DELETE',
             )
+
+class BulkError(TrombiError):
+    def __init__(self, data):
+        self.error_type = data['error']
+        self.reason = data.get('reason', None)
+        self.raw = data
+
+class BulkObject(TrombiObject, collections.Mapping):
+    def __init__(self, data):
+        self._data = data
+
+    def __len__(self):
+        return len(self._data)
+
+    def __iter__(self):
+        return iter(self._data)
+
+    def __contains__(self, key):
+        return key in self._data
+
+    def __getitem__(self, key):
+        return self._data[key]
+
+class BulkResult(TrombiResult, collections.Sequence):
+    def __init__(self, result):
+        self.content = []
+        for line in result:
+            print line
+            if 'error' in line:
+                self.content.append(BulkError(line))
+            else:
+                self.content.append(BulkObject(line))
+
+    def __len__(self):
+        return len(self.content)
+
+    def __iter__(self):
+        return iter(self.content)
+
+    def __getitem__(self, key):
+        return self.content[key]
 
 class ViewResult(TrombiObject, collections.Sequence):
     def __init__(self, result):

@@ -1311,3 +1311,146 @@ def test_view_results_with_offset(baseurl, ioloop):
     s = trombi.Server(baseurl, io_loop=ioloop)
     s.create('testdb', callback=do_test)
     ioloop.start()
+
+@with_ioloop
+@with_couchdb
+def test_bulk_insert(baseurl, ioloop):
+    def do_test(db):
+        datas = [
+            {'key1': 'data1'},
+            {'key2': 'data2'},
+            ]
+        db.bulk_docs(datas, bulks_cb)
+
+    def bulks_cb(response):
+        assert not response.error
+        eq(len(response), 2)
+        assert all(isinstance(x, trombi.BulkObject) for x in response)
+        ioloop.stop()
+
+    s = trombi.Server(baseurl, io_loop=ioloop)
+    s.create('testdb', callback=do_test)
+    ioloop.start()
+
+
+@with_ioloop
+@with_couchdb
+def test_bulk_delete(baseurl, ioloop):
+    def do_test(db):
+        def bulks_cb(response):
+            datas = []
+            for doc in response:
+                datas.append(dict(doc))
+                datas[-1]['_deleted'] = True
+            db.bulk_docs(datas, bulks_delete_cb)
+
+        def bulks_delete_cb(response):
+            eq(response.error, False)
+            eq(len(response), 2)
+            assert all(isinstance(x, trombi.BulkObject) for x in response)
+            ioloop.stop()
+
+        datas = [
+            {'key1': 'data1'},
+            {'key2': 'data2'},
+            ]
+        db.bulk_docs(datas, bulks_cb)
+
+    s = trombi.Server(baseurl, io_loop=ioloop)
+    s.create('testdb', callback=do_test)
+    ioloop.start()
+
+
+@with_ioloop
+@with_couchdb
+def test_bulk_mixed(baseurl, ioloop):
+    def do_test(db):
+        def bulks_cb(response):
+            datas = [dict(response[0])]
+            datas[0]['_deleted'] = True
+            db.bulk_docs(datas, bulks_delete_cb)
+
+        def bulks_delete_cb(response):
+            eq(response.error, False)
+            eq(len(response), 1)
+            assert all(isinstance(x, trombi.BulkObject) for x in response)
+            ioloop.stop()
+
+        datas = [
+            {'key1': 'data1'},
+            {'key2': 'data2'},
+            ]
+        db.bulk_docs(datas, bulks_cb)
+
+    s = trombi.Server(baseurl, io_loop=ioloop)
+    s.create('testdb', callback=do_test)
+    ioloop.start()
+
+
+@with_ioloop
+@with_couchdb
+def test_bulk_conflict(baseurl, ioloop):
+    def do_test(db):
+        def bulks_cb(response):
+            db.bulk_docs([{
+                        '_id': 'foobar', 'key1': 'data2'
+                        }], bulks_update_cb)
+
+        def bulks_update_cb(response):
+            eq(response.error, False)
+            eq(len(response), 1)
+            assert all(isinstance(x, trombi.BulkError) for x in response)
+            eq(response[0].reason, 'Document update conflict.')
+            ioloop.stop()
+
+        datas = [
+            {'_id': 'foobar', 'key1': 'data1'},
+            ]
+        db.bulk_docs(datas, bulks_cb)
+
+    s = trombi.Server(baseurl, io_loop=ioloop)
+    s.create('testdb', callback=do_test)
+    ioloop.start()
+
+@with_ioloop
+@with_couchdb
+def test_bulk_insert_with_doc(baseurl, ioloop):
+    def do_test(db):
+        def doc_created_cb(response):
+            response['some'] = 'other'
+            db.bulk_docs([response], bulks_cb)
+
+        def bulks_cb(response):
+            assert not response.error
+            eq(len(response), 1)
+            assert all(isinstance(x, trombi.BulkObject) for x in response)
+            ioloop.stop()
+
+        db.set('mydoc', {'some': 'data'}, doc_created_cb)
+
+
+    s = trombi.Server(baseurl, io_loop=ioloop)
+    s.create('testdb', callback=do_test)
+    ioloop.start()
+
+
+@with_ioloop
+@with_couchdb
+def test_bulk_insert_mixed(baseurl, ioloop):
+    def do_test(db):
+        def doc_created_cb(response):
+            response['some'] = 'other'
+            db.bulk_docs([response, {'other': 'doc'}], bulks_cb)
+
+        def bulks_cb(response):
+            assert not response.error
+            eq(len(response), 2)
+            assert all(isinstance(x, trombi.BulkObject) for x in response)
+            ioloop.stop()
+
+        db.set('mydoc', {'some': 'data'}, doc_created_cb)
+
+
+    s = trombi.Server(baseurl, io_loop=ioloop)
+    s.create('testdb', callback=do_test)
+    ioloop.start()
