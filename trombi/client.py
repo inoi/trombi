@@ -335,7 +335,7 @@ class Database(TrombiObject):
         if 'keys' in kwargs:
             self._fetch(url, _really_callback,
                         method='POST',
-                        body=json.dumps({'keys': kwargs['keys']})
+                        body=json.dumps({'keys': kwargs.pop('keys')})
                         )
         else:
             self._fetch(url, _really_callback)
