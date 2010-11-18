@@ -658,6 +658,20 @@ class Paginator(object):
     def __init__(self, db, limit=10):
         self._db = db
         self._limit = limit
+        self.response = None
+        self.count = 0
+        self.start_index = 0
+        self.end_index = 0
+        self.num_pages = 0
+        self.current_page = 0
+        self.previous_page = 0
+        self.next_page = 0
+        self.rows = None
+        self.has_next = False
+        self.has_previous = False
+        self.page_range = None
+        self.start_doc_id = None
+        self.end_doc_id = None
 
     def get_page(self, design_doc, viewname, callback,
             key=None, doc_id=None, direction=1, **kwargs):
