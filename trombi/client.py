@@ -295,8 +295,8 @@ class Database(TrombiObject):
 
     def get(self, doc_id, callback, attachments=False):
         def _really_callback(response):
-            data = json.loads(response.body)
             if response.code == 200:
+                data = json.loads(response.body)
                 doc = Document(self, data)
                 callback(doc)
             elif response.code == 404:
