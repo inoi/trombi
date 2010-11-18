@@ -533,7 +533,7 @@ class Document(collections.MutableMapping, TrombiObject):
 
 class ViewResult(TrombiObject, collections.Sequence):
     def __init__(self, result):
-        self._total_rows = result.get('total_rows', len(result['rows']))
+        self.total_rows = result.get('total_rows', len(result['rows']))
         self._rows = result['rows']
 
     def __len__(self):
