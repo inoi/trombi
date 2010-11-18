@@ -87,6 +87,14 @@ Result objects
    dictionary like syntax and iterating over result rows using
    :func:`iter`.
 
+   .. attribute:: total_rows
+
+      Total rows of the view as returned by CouchDB
+
+   .. attribute:: offset
+
+      Offset of the view as returned by CouchDB
+
 
 Server
 ======
