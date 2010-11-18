@@ -469,15 +469,6 @@ class Document(collections.MutableMapping, TrombiObject):
     def __delitem__(self, key):
         del self.data[key]
 
-    def _as_dict(self):
-        import warnings
-        warnings.warn(
-            'Document._as_dict is deprecated and will be removed '\
-                'in the future. You have been warned!',
-            DeprecationWarning
-            )
-        return self.raw()
-
     def raw(self):
         result = {}
         if self.id:
