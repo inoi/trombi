@@ -547,5 +547,176 @@ class ViewResult(TrombiObject, collections.Sequence):
         return self._rows[key]
 
 
+class Paginator(object):
+    """
+    Provides pseudo pagination of CouchDB documents calculated from
+    the total_rows and offset of a CouchDB view as well as a user-
+    defined page limit.
+
+    Paginator
+    =========
+
+    .. class:: Paginator(db[, limit=10])
+
+       Represents a pseudo-page of documents returned from a CouchDB view
+       calculated from total_rows and offset as well as a user-defined page
+       limit.
+
+       The one mandatory argument, db, is a :class:`Database` instance.  
+
+       .. attribute:: db
+
+          Stores the given argument.
+
+       .. attribute:: limit
+
+          The number of documents returned for a given "page"
+
+       .. attribute:: response
+
+          Stores the actual :class:`ViewResult` instance.
+
+       .. attribute:: count
+
+          The total_rows attribute returned from the CouchDB view
+
+       .. attribute:: start_index
+
+          The document offset or position of the first item on the page.
+
+       .. attribute:: end_index
+
+          The document offset or position of the last item on the page.
+
+       .. attribute:: num_pages
+
+          The total number of pages (total_rows of view / limit)
+
+       .. attribute:: current_page
+
+          The current page number
+
+       .. attribute:: previous_page
+
+          The previous page number
+
+       .. attribute:: next_page
+
+          The next page number
+
+       .. attribute:: rows
+
+          An ordered array of the documents for the current page
+
+       .. attribute:: has_next
+
+          A Boolean member to determine if there is a next page
+
+       .. attribute:: has_previous
+
+          A Boolean member to determine if there is a previous page
+
+       .. attribute:: page_range
+
+          A list of the number of pages
+
+       .. attribute:: start_doc_id
+
+          The Document ID of the first document on the page
+
+       .. attribute:: end_doc_id
+
+          The Document ID of the last document on the page
+
+       .. method:: get_page(design_doc, viewname, callback[, key=None, doc_id=None, direction=1, **kwargs])
+
+          Fetches the ``limit`` specified number of CouchDB documents from
+          the view.
+
+          ``key`` can be defined as a complex key by the calling function.
+          If requesting a previous page, the ``key`` must be built using the
+          first document on the current page.  If requesting the next page,
+          ``key`` must be built using the last document on the current page.
+
+          ``doc_id`` uses the same logic as the above key, but is used to
+          specify start_doc_id or end_doc_id (depending on direction) in
+          case the CouchDB view returns duplicate keys.
+
+          ``direction`` simply defines whether you are requesting to go
+          to the next page or the previous page.  If ``direction`` is 0 then
+          it attempts to move backward from the key/doc_id given.  If
+          ``direction`` is 1 then it attempts to more forward.
+
+          Additional keyword arguments can be given and those are all sent
+          as JSON encoded query parameters to CouchDB and can override
+          default values such as descending = true.
+
+          On success, *callback* is called with this :class:`Paginator` as
+          an argument.
+
+    """
+    def __init__(self, db, limit=10):
+        self._db = db
+        self._limit = limit
+
+    def get_page(self, design_doc, viewname, callback,
+            key=None, doc_id=None, direction=1, **kwargs):
+        """
+        On success, callback is called with this Paginator object as an
+        argument that is fully populated with the page data requested.
+
+        Use direction = 1 for paging forward, and direction = 0 for paging
+        backwards.
+
+        The combination of key/doc_id and direction is crucial.  When
+        requesting to paginate forward the key/doc_id must be the built
+        from the _last_ document on the current page you are moving forward
+        from.  When paginating backwards, the key/doc_id must be built 
+        from the _first_ document on the current page.
+
+        """
+        def _really_callback(response):
+            if direction:
+                offset = response.offset
+            else:
+                offset = response._total_rows - response.offset - self._limit
+
+            self.response = response
+            self.count = response._total_rows
+            self.start_index = offset
+            self.end_index = response.offset + self._limit - 1
+            self.num_pages = (self.count / self._limit) + 1
+            self.current_page = (offset / self._limit) + 1
+            self.previous_page = self.current_page - 1
+            self.next_page = self.current_page + 1
+            self.rows = [row['value'] for row in response]
+            if not direction:
+                self.rows.reverse()
+            self.has_next = (offset + self._limit) < self.count
+            self.has_previous = (offset - self._limit) >= 0
+            self.page_range = [p for p in xrange(1, self.num_pages+1)]
+            try:
+                self.start_doc_id = self.rows[0]['_id']
+                self.end_doc_id = self.rows[-1]['_id']
+            except IndexError, KeyError:
+                # empty set
+                self.start_doc_id = None
+                self.end_doc_id = None 
+            callback(self)
+
+        kwargs = {'limit': self._limit,
+                  'descending': True}
+        kwargs.update(kwargs)
+        if key and direction:
+            kwargs['startkey'] = key
+            kwargs['start_doc_id'] = doc_id if doc_id else ''
+        elif key:
+            kwargs['startkey'] = key
+            kwargs['start_doc_id'] = doc_id if doc_id else ''
+            kwargs['descending'] = False if kwargs['descending'] else True
+            kwargs['skip'] = 1
+
+        self._db.view(design_doc, viewname, _really_callback, **kwargs)
+
 
 VALID_DB_NAME = re.compile(r'^[a-z][a-z0-9_$()+-/]*$')
