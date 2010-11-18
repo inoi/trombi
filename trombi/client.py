@@ -52,8 +52,13 @@ def from_uri(uri, fetch_args={}, io_loop=None):
     db_name = p.path.lstrip('/').rstrip('/')
     return Database(server, db_name)
 
-
 class TrombiError(object):
+    """
+    A common error class denoting an error that has happened
+    """
+    error = True
+
+class TrombiErrorResponse(TrombiError):
     def __init__(self, errno, msg):
         self.error = True
         self.errno = errno
@@ -91,17 +96,17 @@ def _jsonize_params(params):
 
 def _error_response(response):
     if response.code == 599:
-        return TrombiError(599, 'Unable to connect to CouchDB')
+        return TrombiErrorResponse(599, 'Unable to connect to CouchDB')
 
     try:
         content = json.loads(response.body)
     except ValueError:
-        return TrombiError(response.code, response.body)
+        return TrombiErrorResponse(response.code, response.body)
     try:
-        return TrombiError(response.code, content['reason'])
+        return TrombiErrorResponse(response.code, content['reason'])
     except (KeyError, TypeError):
         # TypeError is risen if the result is a list
-        return TrombiError(response.code, content)
+        return TrombiErrorResponse(response.code, content)
 
 class Server(TrombiObject):
     def __init__(self, baseurl, fetch_args={}, io_loop=None):
@@ -116,7 +121,7 @@ class Server(TrombiObject):
         self.io_loop = io_loop
 
     def _invalid_db_name(self, name):
-        return TrombiError(
+        return TrombiErrorResponse(
             trombi.errors.INVALID_DATABASE_NAME,
             'Invalid database name: %r' % name,
             )
@@ -138,7 +143,7 @@ class Server(TrombiObject):
                 callback(Database(self, name))
             elif response.code == 412:
                 callback(
-                    TrombiError(
+                    TrombiErrorResponse(
                         trombi.errors.PRECONDITION_FAILED,
                         'Database already exists: %r' % name
                         ))
@@ -164,7 +169,7 @@ class Server(TrombiObject):
                 if create:
                     self.create(name, callback)
                 else:
-                    callback(TrombiError(
+                    callback(TrombiErrorResponse(
                             trombi.errors.NOT_FOUND,
                             'Database not found: %s' % name
                             ))
@@ -182,7 +187,7 @@ class Server(TrombiObject):
                 callback(TrombiObject())
             elif response.code == 404:
                 callback(
-                    TrombiError(
+                    TrombiErrorResponse(
                         trombi.errors.NOT_FOUND,
                         'Database does not exist: %r' % name
                         ))

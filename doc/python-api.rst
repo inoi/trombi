@@ -21,11 +21,18 @@ Result objects
 
 .. class:: TrombiError
 
-   Returned upon errorneus CouchDB API call.
+   A common error class indicating that an error has happened
 
    .. attribute:: error
 
-      Indicates that an error happened. Always *True*.
+      Indicates that error happened. Always *True*.
+
+.. class:: TrombiErrorResponse
+
+   Returned upon errorneus CouchDB API call. This is generally a call
+   that results in other than 2xx response code.
+
+   Subclasses :class:`TrombiError`.
 
    .. attribute:: errno
 
