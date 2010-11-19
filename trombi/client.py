@@ -765,10 +765,10 @@ class Paginator(object):
             if direction:
                 offset = response.offset
             else:
-                offset = response._total_rows - response.offset - self._limit
+                offset = response.total_rows - response.offset - self._limit
 
             self.response = response
-            self.count = response._total_rows
+            self.count = response.total_rows
             self.start_index = offset
             self.end_index = response.offset + self._limit - 1
             self.num_pages = (self.count / self._limit) + 1
