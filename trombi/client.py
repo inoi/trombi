@@ -416,7 +416,8 @@ class Database(TrombiObject):
                     content = json.loads(response.body)
                 except ValueError:
                     callback(TrombiErrorResponse(response.code, response.body))
-                callback(BulkResult(content))
+                else:
+                    callback(BulkResult(content))
             else:
                 callback(_error_response(response))
 
