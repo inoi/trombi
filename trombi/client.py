@@ -619,7 +619,7 @@ class ViewResult(TrombiObject, collections.Sequence):
         return self._rows[key]
 
 
-class Paginator(object):
+class Paginator(TrombiObject):
     """
     Provides pseudo pagination of CouchDB documents calculated from
     the total_rows and offset of a CouchDB view as well as a user-
