@@ -21,13 +21,15 @@
 # SOFTWARE.
 
 import errno
+import json
 import os
 import shutil
 import subprocess
 import time
+import urllib2
 
 import nose.tools
-import couchdb
+from tornado.httpclient import HTTPClient
 
 baseurl = ''
 
@@ -69,6 +71,19 @@ file = %(log)s
 
     # Wait for couchdb to start
     time.sleep(1)
+    # Wait for couchdb to start
+
+    while True:
+        try:
+            f = urllib2.urlopen(baseurl)
+        except urllib2.URLError:
+            continue
+        try:
+            data = json.load(f)
+        except ValueError:
+            continue
+        # Got a sensible response
+        break
 
 def teardown():
     global _proc
@@ -81,13 +96,24 @@ def with_couchdb(func):
     def inner(*args, **kwargs):
         global baseurl
 
-        # Delete the old database if it exists
-        server = couchdb.client.Server(baseurl)
-        for database in server:
+        cli = HTTPClient()
+        # Delete all old databases
+        response = cli.fetch('%s_all_dbs' % baseurl)
+        try:
+            dbs = json.loads(response.body)
+        except ValueError:
+            print >> sys.stderr, \
+                "CouchDB's response was invalid JSON: %s" % db_string
+            sys.exit(2)
+
+        for database in dbs:
             if database.startswith('_'):
-                # Special databases like _users
+                # Skip special databases like _users
                 continue
-            del server[database]
+            cli.fetch(
+                '%s%s' % (baseurl, database),
+                method='DELETE',
+                )
 
         return func(baseurl, *args, **kwargs)
 

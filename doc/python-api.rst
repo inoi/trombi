@@ -21,11 +21,18 @@ Result objects
 
 .. class:: TrombiError
 
-   Returned upon errorneus CouchDB API call.
+   A common error class indicating that an error has happened
 
    .. attribute:: error
 
-      Indicates that an error happened. Always *True*.
+      Indicates that error happened. Always *True*.
+
+.. class:: TrombiErrorResponse
+
+   Returned upon errorneus CouchDB API call. This is generally a call
+   that results in other than 2xx response code.
+
+   Subclasses :class:`TrombiError`.
 
    .. attribute:: errno
 
@@ -86,6 +93,51 @@ Result objects
    kind of like a tuple. Supports :func:`len`, accessing items with
    dictionary like syntax and iterating over result rows using
    :func:`iter`.
+
+   .. attribute:: total_rows
+
+      Total rows of the view as returned by CouchDB
+
+   .. attribute:: offset
+
+      Offset of the view as returned by CouchDB
+
+.. class:: BulkResult
+
+   A special result object for CouchDB's bulk API responses.
+   Subclasses :class:`TrombiObject` and :class:`collections.Sequence`.
+
+   Due to the subclassing of :class:`collections.Sequence`, behaves
+   kind of like a tuple. Supports :func:`len`, accessing items with
+   dictionary like syntax and iterating over result :func:`iter`.
+
+   .. attribute:: content
+
+      The processed bulk API response content. Consists of instances
+      of either :class:`BulkObject` or :class:`BulkError`.
+
+.. class:: BulkObject
+
+   A special result object for a single successful CouchDB's bulk API
+   response. Subclasses :class:`TrombiObject` and
+   :class:`collections.Mapping`.
+
+   Due to the subclassing of :class:`collections.Mapping`, behaves
+   like a immutable dictionary. Can be converted to a dictionary
+   object using built-in function :func:`dict`.
+
+.. class:: BulkError
+
+   Indicates a single error response from bulk API. Subclasses
+   :class:`TrombiError`.
+
+   .. attribute:: error_type
+
+      The error type given by bulk API
+
+   .. attribute:: reason
+
+      The reason given by bulk API
 
 
 Server
@@ -216,6 +268,19 @@ argument.
 
       On success, calls *callback* with :class:`Database` (i.e.
       *self*) as an argument.
+
+   .. method:: bulk_docs(bulk_data, callback[, all_or_nothing=False])
+
+      Performs a bulk update on database. *bulk_data* is a list of
+      :class:`Document` or :class:`dict` objects. If the upgrade was
+      succesfull (i.e. returned with 2xx HTTP response code) calls
+      *callback* with :class:`BulkResult` as a parameter.
+
+      If *all_or_nothing* is *True* the operation is done with the
+      *all_or_nothing* flag set to *true*. For more information, see
+      `CouchDB bulk document API`_.
+
+      .. _CouchDB bulk API: http://wiki.apache.org/couchdb/HTTP_Bulk_Document_API
 
    .. method:: view(design_doc, viewname, callback[, **kwargs])
 

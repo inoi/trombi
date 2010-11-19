@@ -52,8 +52,13 @@ def from_uri(uri, fetch_args={}, io_loop=None):
     db_name = p.path.lstrip('/').rstrip('/')
     return Database(server, db_name)
 
-
 class TrombiError(object):
+    """
+    A common error class denoting an error that has happened
+    """
+    error = True
+
+class TrombiErrorResponse(TrombiError):
     def __init__(self, errno, msg):
         self.error = True
         self.errno = errno
@@ -91,17 +96,17 @@ def _jsonize_params(params):
 
 def _error_response(response):
     if response.code == 599:
-        return TrombiError(599, 'Unable to connect to CouchDB')
+        return TrombiErrorResponse(599, 'Unable to connect to CouchDB')
 
     try:
         content = json.loads(response.body)
     except ValueError:
-        return TrombiError(response.code, response.body)
+        return TrombiErrorResponse(response.code, response.body)
     try:
-        return TrombiError(response.code, content['reason'])
+        return TrombiErrorResponse(response.code, content['reason'])
     except (KeyError, TypeError):
         # TypeError is risen if the result is a list
-        return TrombiError(response.code, content)
+        return TrombiErrorResponse(response.code, content)
 
 class Server(TrombiObject):
     def __init__(self, baseurl, fetch_args={}, io_loop=None):
@@ -116,7 +121,7 @@ class Server(TrombiObject):
         self.io_loop = io_loop
 
     def _invalid_db_name(self, name):
-        return TrombiError(
+        return TrombiErrorResponse(
             trombi.errors.INVALID_DATABASE_NAME,
             'Invalid database name: %r' % name,
             )
@@ -138,7 +143,7 @@ class Server(TrombiObject):
                 callback(Database(self, name))
             elif response.code == 412:
                 callback(
-                    TrombiError(
+                    TrombiErrorResponse(
                         trombi.errors.PRECONDITION_FAILED,
                         'Database already exists: %r' % name
                         ))
@@ -164,7 +169,7 @@ class Server(TrombiObject):
                 if create:
                     self.create(name, callback)
                 else:
-                    callback(TrombiError(
+                    callback(TrombiErrorResponse(
                             trombi.errors.NOT_FOUND,
                             'Database not found: %s' % name
                             ))
@@ -182,7 +187,7 @@ class Server(TrombiObject):
                 callback(TrombiObject())
             elif response.code == 404:
                 callback(
-                    TrombiError(
+                    TrombiErrorResponse(
                         trombi.errors.NOT_FOUND,
                         'Database does not exist: %r' % name
                         ))
@@ -295,8 +300,8 @@ class Database(TrombiObject):
 
     def get(self, doc_id, callback, attachments=False):
         def _really_callback(response):
-            data = json.loads(response.body)
             if response.code == 200:
+                data = json.loads(response.body)
                 doc = Document(self, data)
                 callback(doc)
             elif response.code == 404:
@@ -329,13 +334,18 @@ class Database(TrombiObject):
         else:
             url = '_design/%s/_view/%s' % (design_doc, viewname)
 
+        # We need to pop keys before constructing the url to avoid it
+        # ending up twice in the request, both in the body and as a
+        # query parameter.
+        keys = kwargs.pop('keys', None)
+
         if kwargs:
             url = '%s?%s' % (url, _jsonize_params(kwargs))
 
-        if 'keys' in kwargs:
+        if keys is not None:
             self._fetch(url, _really_callback,
                         method='POST',
-                        body=json.dumps({'keys': kwargs['keys']})
+                        body=json.dumps({'keys': keys})
                         )
         else:
             self._fetch(url, _really_callback)
@@ -399,6 +409,36 @@ class Database(TrombiObject):
             method='DELETE',
             )
 
+    def bulk_docs(self, data, callback, all_or_nothing=False):
+        def _really_callback(response):
+            if response.code == 200 or response.code == 201:
+                try:
+                    content = json.loads(response.body)
+                except ValueError:
+                    callback(TrombiErrorResponse(response.code, response.body))
+                else:
+                    callback(BulkResult(content))
+            else:
+                callback(_error_response(response))
+
+        docs = []
+        for element in data:
+            if isinstance(element, Document):
+                docs.append(element.raw())
+            else:
+                docs.append(element)
+
+        payload = {'docs': docs}
+        if all_or_nothing is True:
+            payload['all_or_nothing'] = True
+
+        self._fetch(
+            '_bulk_docs',
+            _really_callback,
+            method='POST',
+            body=json.dumps(payload),
+            )
+
 
 class Document(collections.MutableMapping, TrombiObject):
     def __init__(self, db, data):
@@ -434,15 +474,6 @@ class Document(collections.MutableMapping, TrombiObject):
 
     def __delitem__(self, key):
         del self.data[key]
-
-    def _as_dict(self):
-        import warnings
-        warnings.warn(
-            'Document._as_dict is deprecated and will be removed '\
-                'in the future. You have been warned!',
-            DeprecationWarning
-            )
-        return self.raw()
 
     def raw(self):
         result = {}
@@ -531,9 +562,50 @@ class Document(collections.MutableMapping, TrombiObject):
             method='DELETE',
             )
 
+class BulkError(TrombiError):
+    def __init__(self, data):
+        self.error_type = data['error']
+        self.reason = data.get('reason', None)
+        self.raw = data
+
+class BulkObject(TrombiObject, collections.Mapping):
+    def __init__(self, data):
+        self._data = data
+
+    def __len__(self):
+        return len(self._data)
+
+    def __iter__(self):
+        return iter(self._data)
+
+    def __contains__(self, key):
+        return key in self._data
+
+    def __getitem__(self, key):
+        return self._data[key]
+
+class BulkResult(TrombiResult, collections.Sequence):
+    def __init__(self, result):
+        self.content = []
+        for line in result:
+            print line
+            if 'error' in line:
+                self.content.append(BulkError(line))
+            else:
+                self.content.append(BulkObject(line))
+
+    def __len__(self):
+        return len(self.content)
+
+    def __iter__(self):
+        return iter(self.content)
+
+    def __getitem__(self, key):
+        return self.content[key]
+
 class ViewResult(TrombiObject, collections.Sequence):
     def __init__(self, result):
-        self._total_rows = result.get('total_rows', len(result['rows']))
+        self.total_rows = result.get('total_rows', len(result['rows']))
         self._rows = result['rows']
         self.offset = result.get('offset', 0)
 
