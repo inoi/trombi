@@ -700,7 +700,7 @@ class Paginator(object):
 
           The Document ID of the last document on the page
 
-       .. method:: get_page(design_doc, viewname, callback[, key=None, doc_id=None, direction=1, **kwargs])
+       .. method:: get_page(design_doc, viewname, callback[, key=None, doc_id=None, forward=True, **kwargs])
 
           Fetches the ``limit`` specified number of CouchDB documents from
           the view.
@@ -711,13 +711,13 @@ class Paginator(object):
           ``key`` must be built using the last document on the current page.
 
           ``doc_id`` uses the same logic as the above key, but is used to
-          specify start_doc_id or end_doc_id (depending on direction) in
+          specify start_doc_id or end_doc_id (depending on forward) in
           case the CouchDB view returns duplicate keys.
 
-          ``direction`` simply defines whether you are requesting to go
-          to the next page or the previous page.  If ``direction`` is 0 then
+          ``forward`` simply defines whether you are requesting to go
+          to the next page or the previous page.  If ``forward`` is False then
           it attempts to move backward from the key/doc_id given.  If
-          ``direction`` is 1 then it attempts to more forward.
+          ``forward`` is True then it attempts to more forward.
 
           Additional keyword arguments can be given and those are all sent
           as JSON encoded query parameters to CouchDB and can override
@@ -746,23 +746,23 @@ class Paginator(object):
         self.end_doc_id = None
 
     def get_page(self, design_doc, viewname, callback,
-            key=None, doc_id=None, direction=1, **kwargs):
+            key=None, doc_id=None, forward=True, **kwargs):
         """
         On success, callback is called with this Paginator object as an
         argument that is fully populated with the page data requested.
 
-        Use direction = 1 for paging forward, and direction = 0 for paging
-        backwards.
+        Use forward = True for paging forward, and forward = False for
+        paging backwargs
 
-        The combination of key/doc_id and direction is crucial.  When
+        The combination of key/doc_id and forward is crucial.  When
         requesting to paginate forward the key/doc_id must be the built
         from the _last_ document on the current page you are moving forward
-        from.  When paginating backwards, the key/doc_id must be built 
+        from.  When paginating backwards, the key/doc_id must be built
         from the _first_ document on the current page.
 
         """
         def _really_callback(response):
-            if direction:
+            if forward:
                 offset = response.offset
             else:
                 offset = response.total_rows - response.offset - self._limit
@@ -776,7 +776,7 @@ class Paginator(object):
             self.previous_page = self.current_page - 1
             self.next_page = self.current_page + 1
             self.rows = [row['value'] for row in response]
-            if not direction:
+            if not forward:
                 self.rows.reverse()
             self.has_next = (offset + self._limit) < self.count
             self.has_previous = (offset - self._limit) >= 0
@@ -793,7 +793,7 @@ class Paginator(object):
         kwargs = {'limit': self._limit,
                   'descending': True}
         kwargs.update(kwargs)
-        if key and direction:
+        if key and forward:
             kwargs['startkey'] = key
             kwargs['start_doc_id'] = doc_id if doc_id else ''
         elif key:
