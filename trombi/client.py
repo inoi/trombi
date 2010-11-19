@@ -334,13 +334,18 @@ class Database(TrombiObject):
         else:
             url = '_design/%s/_view/%s' % (design_doc, viewname)
 
+        # We need to pop keys before constructing the url to avoid it
+        # ending up twice in the request, both in the body and as a
+        # query parameter.
+        keys = kwargs.pop('keys', None)
+
         if kwargs:
             url = '%s?%s' % (url, _jsonize_params(kwargs))
 
-        if 'keys' in kwargs:
+        if keys is not None:
             self._fetch(url, _really_callback,
                         method='POST',
-                        body=json.dumps({'keys': kwargs.pop('keys')})
+                        body=json.dumps({'keys': keys})
                         )
         else:
             self._fetch(url, _really_callback)
