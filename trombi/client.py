@@ -762,6 +762,11 @@ class Paginator(TrombiObject):
 
         """
         def _really_callback(response):
+            if response.error:
+                # Send the received Database.view error to the callback
+                self.error = response.error
+                callback(self)
+
             if forward:
                 offset = response.offset
             else:
