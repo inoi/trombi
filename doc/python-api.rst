@@ -315,6 +315,24 @@ argument.
       Additional keyword arguments can be given and those are all sent
       as JSON encoded query parameters to CouchDB.
 
+   .. method:: changes(callback[, **kw])
+
+      Fetches the ``_changes`` feed for the database. Optional keyword
+      arguments are converted to query parameters for the changes
+      feed. For possible keyword arguments, see `CouchDB database API
+      entry`_ of changes feed.
+
+      If changes feed type is ``continous``, the callback is passed as
+      both streaming and regular callback to the fetch function. The
+      callback is called every time the changes feed sends a line of
+      text that is JSON encoded. The argument to the callback is this
+      line decoded. When the changes feed closes for some reason, the
+      callback is called with ``None`` as an argument if the feed
+      closed properly (ie. server closed the request with ``200 OK``).
+      Otherwise the callback is called with the error object.
+
+      .. _CouchDB database API entry: http://wiki.apache.org/couchdb/HTTP_database_API#Changes
+
    .. method:: temporary_view(callback, map_fun[, reduce_fun=None, language='javascript', **kwargs])
 
       Generates a temporary view and on success calls *callback* with

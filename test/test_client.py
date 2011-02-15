@@ -31,7 +31,6 @@ try:
 except ImportError:
     import simplejson as json
 import urllib
-import functools
 
 import trombi
 import trombi.errors
@@ -1454,3 +1453,51 @@ def test_bulk_insert_mixed(baseurl, ioloop):
     s = trombi.Server(baseurl, io_loop=ioloop)
     s.create('testdb', callback=do_test)
     ioloop.start()
+
+@with_ioloop
+@with_couchdb
+def test_continuous_changes_feed(baseurl, ioloop):
+    def do_test(db):
+        runs = []
+        def _got_change(change):
+            runs.append(True)
+            if len(runs) == 1:
+                # First pass, this should be the change
+                change['changes'][0].pop('rev')
+                eq(change, {'seq': 1, 'id': 'mydoc', 'changes':[{}]})
+                ioloop.stop()
+
+
+        def doc_created(response):
+            assert not response.error
+            db.changes(_got_change, feed='continuous')
+
+        db.set('mydoc', {'some': 'data'}, doc_created)
+
+    s = trombi.Server(baseurl, io_loop=ioloop)
+    s.create('testdb', callback=do_test)
+    ioloop.start()
+
+
+@with_ioloop
+@with_couchdb
+def test_long_polling_changes_feed(baseurl, ioloop):
+    changes = []
+    def do_test(db):
+        def _got_change(change):
+            changes.append(change)
+            ioloop.stop()
+
+        def doc_created(response):
+            assert not response.error
+            db.changes(_got_change, feed='longpolling')
+
+        db.set('mydoc', {'some': 'data'}, doc_created)
+
+
+    s = trombi.Server(baseurl, io_loop=ioloop)
+    s.create('testdb', callback=do_test)
+    ioloop.start()
+    changes[0]['results'][0]['changes'][0].pop('rev')
+    eq(changes[0], {'last_seq': 1, 'results': [{
+                    'changes': [{}], 'id': 'mydoc', 'seq': 1}]})

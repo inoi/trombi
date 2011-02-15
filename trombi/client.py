@@ -439,6 +439,43 @@ class Database(TrombiObject):
             body=json.dumps(payload),
             )
 
+    def changes(self, callback, **kw):
+        feed_type = kw.get('feed', 'normal')
+
+        def _really_callback(response):
+            if response.code != 200:
+                callback(_error_response(response))
+            if feed_type == 'continuous':
+                # Feed terminated, call callback with None to indicate
+                # this, if the mode is continous
+                callback(None)
+            else:
+                callback(json.loads(response.body))
+
+        stream_buffer = []
+        def _stream(text):
+            print 'errr'
+            stream_buffer.append(text)
+            chunks = ''.join(stream_buffer).split('\n')
+            if chunks[0]:
+                try:
+                    obj = json.loads(chunks[0])
+                    callback(obj)
+                except ValueError:
+                    # JSON parsing failed. Apparently we have some
+                    # gibberish at our hands, just discard it by
+                    # silently ignoring the JSON error
+                    pass
+
+            # Need to use [:] here due to scoping issues
+            stream_buffer[:] = chunks[1:]
+        url = '_changes?%s' % urllib.urlencode(kw)
+        params = {}
+        if feed_type == 'continuous':
+            params['streaming_callback'] = _stream
+
+        self._fetch(url, _really_callback, **params)
+
 
 class Document(collections.MutableMapping, TrombiObject):
     def __init__(self, db, data):
