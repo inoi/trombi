@@ -1485,7 +1485,7 @@ def test_long_polling_changes_feed(baseurl, ioloop):
     changes = []
     def do_test(db):
         def _got_change(change):
-            changes.append(change)
+            changes.append(change.content)
             ioloop.stop()
 
         def doc_created(response):

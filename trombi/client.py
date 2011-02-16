@@ -450,7 +450,7 @@ class Database(TrombiObject):
                 # this, if the mode is continous
                 callback(None)
             else:
-                callback(json.loads(response.body))
+                callback(TrombiResult(json.loads(response.body)))
 
         stream_buffer = []
         def _stream(text):
