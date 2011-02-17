@@ -109,7 +109,7 @@ def _error_response(response):
         return TrombiErrorResponse(response.code, content)
 
 class Server(TrombiObject):
-    def __init__(self, baseurl, fetch_args={}, io_loop=None):
+    def __init__(self, baseurl, fetch_args={}, io_loop=None, **client_args):
         self.error = False
         self.baseurl = baseurl
         if self.baseurl[-1] == '/':
@@ -119,6 +119,7 @@ class Server(TrombiObject):
             'headers': HTTPHeaders({'Content-Type': 'application/json'})
             }
         self.io_loop = io_loop
+        self._client = AsyncHTTPClient(self.io_loop, **client_args)
 
     def _invalid_db_name(self, name):
         return TrombiErrorResponse(
@@ -131,7 +132,7 @@ class Server(TrombiObject):
         fetch_args = self._default_args.copy()
         fetch_args.update(self._fetch_args)
         fetch_args.update(kwargs)
-        AsyncHTTPClient(io_loop=self.io_loop).fetch(*args, **fetch_args)
+        self._client.fetch(*args, **fetch_args)
 
     def create(self, name, callback):
         if not VALID_DB_NAME.match(name):
