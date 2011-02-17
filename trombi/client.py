@@ -439,13 +439,11 @@ class Database(TrombiObject):
             body=json.dumps(payload),
             )
 
-    def changes(self, callback, **kw):
-        feed_type = kw.get('feed', 'normal')
-
+    def changes(self, callback, timeout=60, feed='normal', **kw):
         def _really_callback(response):
             if response.code != 200:
                 callback(_error_response(response))
-            if feed_type == 'continuous':
+            if feed == 'continuous':
                 # Feed terminated, call callback with None to indicate
                 # this, if the mode is continous
                 callback(None)
@@ -454,7 +452,10 @@ class Database(TrombiObject):
 
         stream_buffer = []
         def _stream(text):
-            print 'errr'
+            text = text.strip()
+            if not text:
+                return
+
             stream_buffer.append(text)
             chunks = ''.join(stream_buffer).split('\n')
             if chunks[0]:
@@ -469,9 +470,15 @@ class Database(TrombiObject):
 
             # Need to use [:] here due to scoping issues
             stream_buffer[:] = chunks[1:]
-        url = '_changes?%s' % urllib.urlencode(kw)
-        params = {}
-        if feed_type == 'continuous':
+        couchdb_params = kw
+        couchdb_params['feed'] = feed
+        couchdb_params['timeout'] = timeout * 1000
+        url = '_changes?%s' % urllib.urlencode(couchdb_params)
+        params = {
+            'request_timeout': timeout,
+            'connect_timeout': timeout,
+            }
+        if feed == 'continuous':
             params['streaming_callback'] = _stream
 
         self._fetch(url, _really_callback, **params)
@@ -625,7 +632,6 @@ class BulkResult(TrombiResult, collections.Sequence):
     def __init__(self, result):
         self.content = []
         for line in result:
-            print line
             if 'error' in line:
                 self.content.append(BulkError(line))
             else:
