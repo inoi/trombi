@@ -147,7 +147,7 @@ In case of an error, if not otherwise mentioned, all the following
 methods call callback function with :class:`TrombiError` as an
 argument.
 
-.. class:: Server(baseurl[, fetch_args={}, io_loop=None])
+.. class:: Server(baseurl[, fetch_args={}, io_loop=None, **client_args])
 
    Represents the connection to a CouchDB server. Subclass of
    :class:`TrombiObject`.
@@ -174,6 +174,14 @@ argument.
       by passing in ``auth_username`` and ``auth_password`` as keyword
       arguments, we can now use CouchDB servers using HTTP Basic
       Authentication.
+
+   .. attribute:: client_args
+
+      These additional arguments are directly passed to the
+      :meth:`AsyncHTTPClient` upon creation. This way the user can
+      configure the underlying HTTP client, for example to allow more
+      concurrent connections by passing
+      ``max_simultaneous_connections`` keyword argument.
 
    .. method:: create(name, callback)
 
