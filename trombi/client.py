@@ -557,6 +557,9 @@ class Document(collections.MutableMapping, TrombiObject):
 
     def attach(self, name, data, callback, type='text/plain'):
         def _really_callback(response):
+            if  response.code != 201:
+                callback(_error_response(response))
+                return
             data = json.loads(response.body)
             assert data['id'] == self.id
             self.rev = data['rev']
@@ -599,6 +602,9 @@ class Document(collections.MutableMapping, TrombiObject):
 
     def delete_attachment(self, name, callback):
         def _really_callback(response):
+            if response.code != 200:
+                callback(_error_response(response))
+                return
             callback(self)
 
         self.db._fetch(

@@ -580,16 +580,10 @@ def test_save_attachment_inline(baseurl, ioloop):
             attachments={'foobar': (None, 'some textual data')},
             )
 
-    def create_doc_callback(doc):
-        data = 'some textual data'
-        doc.attach('foobar', data, callback=data_callback)
-
     def data_callback(doc):
         f = urllib.urlopen('%stestdb/testid/foobar' % baseurl)
         eq(f.read(), 'some textual data')
         ioloop.stop()
-
-
 
     s = trombi.Server(baseurl, io_loop=ioloop)
     s.create('testdb', callback=create_db_callback)
@@ -608,17 +602,11 @@ def test_save_attachment_inline_custom_content_type(baseurl, ioloop):
                          },
             )
 
-    def create_doc_callback(doc):
-        data = 'some textual data'
-        doc.attach('foobar', data, callback=data_callback)
-
     def data_callback(doc):
         f = urllib.urlopen('%stestdb/testid/foobar' % baseurl)
         eq(f.info()['Content-Type'], 'application/x-custom')
         eq(f.read(), 'some textual data')
         ioloop.stop()
-
-
 
     s = trombi.Server(baseurl, io_loop=ioloop)
     s.create('testdb', callback=create_db_callback)
@@ -643,10 +631,31 @@ def test_save_attachment(baseurl, ioloop):
         eq(f.read(), 'some textual data')
         ioloop.stop()
 
-
-
     s = trombi.Server(baseurl, io_loop=ioloop)
     s.create('testdb', callback=create_db_callback)
+    ioloop.start()
+
+@with_ioloop
+@with_couchdb
+def test_save_attachment_wrong_rev(baseurl, ioloop):
+    def do_test(db):
+        def create_doc_callback(doc):
+            doc.rev = '1-deadbeef'
+            data = 'some textual data'
+            doc.attach('foobar', data, callback=data_callback)
+
+        def data_callback(doc):
+            eq(doc.error, True)
+            ioloop.stop()
+
+        db.set(
+            'testid',
+            {'testvalue': 'something'},
+            create_doc_callback,
+            )
+
+    s = trombi.Server(baseurl, io_loop=ioloop)
+    s.create('testdb', callback=do_test)
     ioloop.start()
 
 @with_ioloop
@@ -772,6 +781,31 @@ def test_delete_attachment(baseurl, ioloop):
     s = trombi.Server(baseurl, io_loop=ioloop)
     s.create('testdb', callback=create_db_callback)
     ioloop.start()
+
+
+@with_ioloop
+@with_couchdb
+def test_delete_attachment_wrong_rev(baseurl, ioloop):
+    def create_db_callback(db):
+        db.set(
+            'testid',
+            {'testvalue': 'something'},
+            create_doc_callback,
+            )
+
+    def create_doc_callback(doc):
+        doc.rev = '1-deadwrong'
+        data = 'some textual data'
+        doc.attach('foobar', data, callback=attach_callback)
+
+    def attach_callback(doc):
+        eq(doc.error, True)
+        ioloop.stop()
+
+    s = trombi.Server(baseurl, io_loop=ioloop)
+    s.create('testdb', callback=create_db_callback)
+    ioloop.start()
+
 
 @with_ioloop
 @with_couchdb
