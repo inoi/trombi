@@ -16,6 +16,17 @@ classes representing different data objects of CouchDB_ subclass
 
 .. _CouchDB: http://couchdb.apache.org/
 
+Helper methods
+==============
+
+.. method:: trombi.from_uri(uri[, fetch_args={}, io_loop=None, **kwargs])
+
+   Constructs a :class:`Database` instance from *uri*. The *uri*
+   format is the http-path to the database, for example
+   ``http://localhost:5984/my-database``. Additional arguments can be
+   given and they are passed to the :class:`Server` object upon
+   creation.
+
 Result objects
 ==============
 
