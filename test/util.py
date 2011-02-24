@@ -20,6 +20,7 @@
 # CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
+import json
 import os
 import sys
 import errno
@@ -27,6 +28,7 @@ import new
 import shutil
 import nose.tools
 
+from datetime import datetime
 from tornado.httpserver import HTTPServer
 from tornado.ioloop import IOLoop
 
@@ -138,3 +140,10 @@ def assert_raises(excClass, callableObj, *args, **kwargs):
         if hasattr(excClass,'__name__'): excName = excClass.__name__
         else: excName = str(excClass)
         raise AssertionError("%s not raised" % excName)
+
+class DatetimeEncoder(json.JSONEncoder):
+    def default(self, o):
+        if isinstance(o, datetime):
+            return o.isoformat()
+        else:
+            return super(DatetimeEncoder, self).default(o)

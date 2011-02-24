@@ -22,9 +22,10 @@
 
 from __future__ import with_statement
 
+from datetime import datetime
 from nose.tools import eq_ as eq
 from couch_util import setup, teardown, with_couchdb
-from util import with_ioloop, assert_raises
+from util import with_ioloop, assert_raises, DatetimeEncoder
 
 try:
     import json
@@ -1535,3 +1536,35 @@ def test_long_polling_changes_feed(baseurl, ioloop):
     changes[0]['results'][0]['changes'][0].pop('rev')
     eq(changes[0], {'last_seq': 1, 'results': [{
                     'changes': [{}], 'id': 'mydoc', 'seq': 1}]})
+
+def test_custom_encoder():
+    s = trombi.Server('http://localhost:5984', json_encoder=DatetimeEncoder)
+    json.dumps({'foo': datetime.now()}, cls=s._json_encoder)
+
+def test_custom_encoder_from_uri():
+    db = trombi.from_uri('http://localhost:5984/testdb/',
+                         json_encoder=DatetimeEncoder)
+    json.dumps({'foo': datetime.now()}, cls=db._json_encoder)
+
+
+@with_ioloop
+@with_couchdb
+def test_create_document_with_custom_encoder(baseurl, ioloop):
+    def create_db_callback(db):
+        db.set(
+            {'testvalue': datetime(1900, 1, 1)},
+            create_doc_callback,
+            )
+
+    def create_doc_callback(doc):
+        eq(doc.error, False)
+        assert isinstance(doc, trombi.Document)
+        assert doc.id
+        assert doc.rev
+
+        eq(doc['testvalue'], datetime(1900, 1, 1))
+        ioloop.stop()
+
+    s = trombi.Server(baseurl, io_loop=ioloop, json_encoder=DatetimeEncoder)
+    s.create('testdb', callback=create_db_callback)
+    ioloop.start()

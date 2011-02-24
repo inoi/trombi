@@ -37,7 +37,7 @@ except ImportError:
 
 import trombi.errors
 
-def from_uri(uri, fetch_args={}, io_loop=None):
+def from_uri(uri, fetch_args={}, io_loop=None, **kwargs):
     import urlparse
 
     p = urlparse.urlparse(uri)
@@ -47,7 +47,7 @@ def from_uri(uri, fetch_args={}, io_loop=None):
         raise ValueError('Invalid database address: %s (only http:// is supported)' % uri)
 
     baseurl = urlparse.urlunsplit((p.scheme, p.netloc, '', '', ''))
-    server = Server(baseurl, fetch_args, io_loop=io_loop)
+    server = Server(baseurl, fetch_args, io_loop=io_loop, **kwargs)
 
     db_name = p.path.lstrip('/').rstrip('/')
     return Database(server, db_name)
@@ -109,7 +109,8 @@ def _error_response(response):
         return TrombiErrorResponse(response.code, content)
 
 class Server(TrombiObject):
-    def __init__(self, baseurl, fetch_args={}, io_loop=None, **client_args):
+    def __init__(self, baseurl, fetch_args={}, io_loop=None,
+                 json_encoder=None, **client_args):
         self.error = False
         self.baseurl = baseurl
         if self.baseurl[-1] == '/':
@@ -119,6 +120,9 @@ class Server(TrombiObject):
             'headers': HTTPHeaders({'Content-Type': 'application/json'})
             }
         self.io_loop = io_loop
+        # We can assign None to _json_encoder as the json (or
+        # simplejson) then defaults to json.JSONEncoder
+        self._json_encoder = json_encoder
         self._client = AsyncHTTPClient(self.io_loop, **client_args)
 
     def _invalid_db_name(self, name):
@@ -217,6 +221,7 @@ class Server(TrombiObject):
 class Database(TrombiObject):
     def __init__(self, server, name):
         self.server = server
+        self._json_encoder = self.server._json_encoder
         self.name = name
         self.baseurl = '%s/%s' % (self.server.baseurl, self.name)
 
@@ -228,7 +233,7 @@ class Database(TrombiObject):
             url = '%s/%s' % (self.baseurl, url)
         return self.server._fetch(url, *args, **kwargs)
 
-    def set(self, *args, **kwargs):
+    def set(self, *args, **kwargs): 
         if len(args) == 2:
             data, callback = args
             doc_id = None
@@ -296,8 +301,8 @@ class Database(TrombiObject):
             url,
             _really_callback,
             method=method,
-            body=json.dumps(doc.raw()),
-            )
+            body=json.dumps(doc.raw(), cls=self._json_encoder),
+        )
 
     def get(self, doc_id, callback, attachments=False):
         def _really_callback(response):
@@ -740,7 +745,7 @@ class Paginator(TrombiObject):
             except IndexError, KeyError:
                 # empty set
                 self.start_doc_id = None
-                self.end_doc_id = None 
+                self.end_doc_id = None
             callback(self)
 
         kwargs = {'limit': self._limit,

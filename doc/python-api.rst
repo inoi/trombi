@@ -147,7 +147,7 @@ In case of an error, if not otherwise mentioned, all the following
 methods call callback function with :class:`TrombiError` as an
 argument.
 
-.. class:: Server(baseurl[, fetch_args={}, io_loop=None, **client_args])
+.. class:: Server(baseurl[, fetch_args={}, io_loop=None, json_encoder, **client_args])
 
    Represents the connection to a CouchDB server. Subclass of
    :class:`TrombiObject`.
@@ -174,6 +174,12 @@ argument.
       by passing in ``auth_username`` and ``auth_password`` as keyword
       arguments, we can now use CouchDB servers using HTTP Basic
       Authentication.
+
+   .. attribute:: json_encoder
+
+      A custom json_encoder can be defined with parameter
+      *json_encoder*. At this point, this encoder is only used when
+      adding or modifying documents.
 
    .. attribute:: client_args
 
