@@ -203,7 +203,6 @@ class Server(TrombiObject):
             '%s/%s' % (self.baseurl, name),
             _really_callback,
             method='DELETE',
-            body='',
             )
 
     def list(self, callback):

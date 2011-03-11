@@ -1234,48 +1234,6 @@ def test_copy_loaded_document_with_attachments_true(baseurl, ioloop):
     s.create('testdb', callback=create_db_callback)
     ioloop.start()
 
-@with_ioloop
-@with_couchdb
-def test_list_with_results(baseurl, ioloop):
-    def do_test(db):
-        def create_view_callback(response):
-            eq(response.code, 201)
-            db.set({'data': 'data'}, create_doc_cb)
-
-        def create_doc_cb(doc):
-            db.list('testview', 'data', 'all', load_view_cb)
-
-        def load_view_cb(result):
-            eq(result.error, False)
-            eq(result.content, 'data')
-            ioloop.stop()
-
-        db.server._fetch(
-            '%stestdb/_design/testview' % baseurl,
-            create_view_callback,
-            method='PUT',
-            body=json.dumps(
-                {
-                    'language': 'javascript',
-                    'views': {
-                        'all': {
-                            'map': 'function (doc) { emit(null, doc) }',
-                            }
-                        },
-                    'lists': {
-                        'data': '''
-function(head, req) {
-    var row = getRow();
-    send(row.value.data);
-}
-'''
-                    }
-                })
-            )
-
-    s = trombi.Server(baseurl, io_loop=ioloop)
-    s.create('testdb', callback=do_test)
-    ioloop.start()
 
 @with_ioloop
 @with_couchdb
