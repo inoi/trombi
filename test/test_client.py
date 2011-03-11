@@ -1495,6 +1495,31 @@ def test_long_polling_changes_feed(baseurl, ioloop):
     eq(changes[0], {'last_seq': 1, 'results': [{
                     'changes': [{}], 'id': 'mydoc', 'seq': 1}]})
 
+
+@with_ioloop
+@with_couchdb
+def test_long_polling_before_doc_created(baseurl, ioloop):
+    changes = []
+    def do_test(db):
+        def _got_change(change):
+            changes.append(change.content)
+            ioloop.stop()
+
+        def doc_created(response):
+            assert not response.error
+
+        db.changes(_got_change, feed='longpoll', timeout=2)
+        db.set('mydoc', {'some': 'data'}, doc_created)
+
+
+    s = trombi.Server(baseurl, io_loop=ioloop)
+    s.create('testdb', callback=do_test)
+    ioloop.start()
+    changes[0]['results'][0]['changes'][0].pop('rev')
+    eq(changes[0], {'last_seq': 1, 'results': [{
+                    'changes': [{}], 'id': 'mydoc', 'seq': 1}]})
+
+
 def test_custom_encoder():
     s = trombi.Server('http://localhost:5984', json_encoder=DatetimeEncoder)
     json.dumps({'foo': datetime.now()}, cls=s._json_encoder)

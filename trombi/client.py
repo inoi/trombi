@@ -22,6 +22,7 @@
 
 """Asynchronous CouchDB client"""
 
+import logging
 import re
 import urllib
 import collections
@@ -29,6 +30,8 @@ import collections
 from base64 import b64encode, b64decode
 from tornado.httpclient import AsyncHTTPClient
 from tornado.httputil import HTTPHeaders
+
+log = logging.getLogger('trombi')
 
 try:
     import json
@@ -446,8 +449,10 @@ class Database(TrombiObject):
 
     def changes(self, callback, timeout=60, feed='normal', **kw):
         def _really_callback(response):
+            log.debug('Changes feed response: %s', response)
             if response.code != 200:
                 callback(_error_response(response))
+                return
             if feed == 'continuous':
                 # Feed terminated, call callback with None to indicate
                 # this, if the mode is continous
@@ -477,15 +482,17 @@ class Database(TrombiObject):
             stream_buffer[:] = chunks[1:]
         couchdb_params = kw
         couchdb_params['feed'] = feed
+        # CouchDB takes timeouts in milliseconds
         couchdb_params['timeout'] = timeout * 1000
         url = '_changes?%s' % urllib.urlencode(couchdb_params)
         params = {
-            'request_timeout': timeout,
-            'connect_timeout': timeout,
+            'request_timeout': float(timeout),
+            'connect_timeout': float(timeout),
             }
         if feed == 'continuous':
             params['streaming_callback'] = _stream
 
+        log.debug('Fetching changes from %s with params %s', url, params)
         self._fetch(url, _really_callback, **params)
 
 
