@@ -40,7 +40,7 @@ except ImportError:
 
 import trombi.errors
 
-def from_uri(uri, fetch_args={}, io_loop=None, **kwargs):
+def from_uri(uri, fetch_args=None, io_loop=None, **kwargs):
     import urlparse
 
     p = urlparse.urlparse(uri)
@@ -112,13 +112,17 @@ def _error_response(response):
         return TrombiErrorResponse(response.code, content)
 
 class Server(TrombiObject):
-    def __init__(self, baseurl, fetch_args={}, io_loop=None,
+    def __init__(self, baseurl, fetch_args=None, io_loop=None,
                  json_encoder=None, **client_args):
         self.error = False
         self.baseurl = baseurl
         if self.baseurl[-1] == '/':
             self.baseurl = self.baseurl[:-1]
-        self._fetch_args = fetch_args
+        if fetch_args is None:
+            self._fetch_args = dict()
+        else:
+            self._fetch_args = fetch_args
+
         self._default_args = {
             'headers': HTTPHeaders({'Content-Type': 'application/json'})
             }
