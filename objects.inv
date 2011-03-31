@@ -1,45 +1,5 @@
-# Sphinx inventory version 1
+# Sphinx inventory version 2
 # Project: trombi
-# Version: 0.8
-trombi mod python-api.html
-trombi.TrombiError.errors.SERVER_ERROR attribute python-api.html
-trombi.Document.raw method python-api.html
-trombi.Document.attach method python-api.html
-trombi.Server.get method python-api.html
-trombi.Document.rev attribute python-api.html
-trombi.Database.view method python-api.html
-trombi.TrombiError class python-api.html
-trombi.Document.copy method python-api.html
-trombi.Server.io_loop attribute python-api.html
-trombi.Document.delete_attachment method python-api.html
-trombi.Server.baseurl attribute python-api.html
-trombi.Server.delete method python-api.html
-trombi.ViewResult class python-api.html
-trombi.Database.temporary_view method python-api.html
-trombi.Document.data attribute python-api.html
-trombi.TrombiError.error attribute python-api.html
-trombi.TrombiError.msg attribute python-api.html
-trombi.TrombiObject.error attribute python-api.html
-trombi.Document.id attribute python-api.html
-trombi.TrombiResult class python-api.html
-trombi.Document class python-api.html
-trombi.Document.attachments attribute python-api.html
-trombi.Server.list method python-api.html
-trombi.TrombiError.errors.CONFLICT attribute python-api.html
-trombi.Document.load_attachment method python-api.html
-trombi.Database.delete method python-api.html
-trombi.Document.db attribute python-api.html
-trombi.Server.fetch_args attribute python-api.html
-trombi.TrombiError.errors.PRECONDITION_FAILED attribute python-api.html
-trombi.Server class python-api.html
-trombi.TrombiError.errno attribute python-api.html
-trombi.Server.create method python-api.html
-trombi.Database class python-api.html
-trombi.TrombiError.errors.INVALID_DATABASE_NAME attribute python-api.html
-trombi.Database.list method python-api.html
-trombi.TrombiResult.content attribute python-api.html
-trombi.TrombiObject class python-api.html
-trombi.Server.error attribute python-api.html
-trombi.TrombiError.errors.BAD_REQUEST attribute python-api.html
-trombi.TrombiError.errors.NOT_FOUND attribute python-api.html
-trombi.Database.set method python-api.html
+# Version: 0.9
+# The remainder of this file is compressed using zlib.
+xÚ­WMOã0½ó+"-×F»Wn)´lZ¸Z=mÌ:vd;@ÿı:û±€ªŒ»§¨®_Æ~ófŞ¤Õ\(‰uüFÒd2û•tÛYşH×ÊÉ£æ½„¤–®6 ¾íWbÜjÖü»q\Û–ã†'º«në­f´Ÿ³_A×IöT&¬Á€bpåŒnká·İ´ã1~ŒÌ®“YØæÔÑšZH´6ÔlÉ›€÷İ[Àƒyò]àÜX(ê´I7àHç?¹ó&b÷F(êœuïà<0<ÖşAz#¦ÆË5ë[P.5tòín{ù§0F›À$µv*µDÁ‡CÜkµ{ìÂU`;­|R`øeÓeQ½)ªjQ]şF¥ï8P0…¸mø‘uxCÀD²Şxu¥55î^Ö1Ÿğ51á‡ë1İm‘ÊšH­»(VTßî±1©à Áñ0Êša_ìÖQãÈØı.Óck7ÿ§Fn³œTÅïçb¹Š¢t “ªP2;Éˆ/v¬HÏÜæn1¿(ïâ®24ŸÎœĞ=F A—¯V+âEs0ô‹/4‹^º‰µÂjDwqî<ê‘â(bAqÂ5#‚GÁMHrD›Èé1	©ÓJbô»EÓ´¨_94O!¡kp¬!ÔlO†–imİOhÉÄem"ó#s¨¬u¤ÙeZ¹Ğ¹/o6åü%{(s’g«ì6[d=Î‚5Í£E´))l„qñ:Æ1¥¦<Â/jeÍà+\dùâšêI×ĞëµÃÑHOÄ¨õYOUáİ//WåbNî³ò¡ÈÑê@zÀ—¢Q<¡øM8weRÓ3®ŸËÎ|±"÷‹çy7d…©;)íoc€"f…}5Ô>Íƒo[ä„1™},L[:õŒèrp±Ë& ìØàÆBô§zê:~·zÍø‰6îãS÷Ó2ò¸ø}!
