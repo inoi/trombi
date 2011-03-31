@@ -1,8 +1,9 @@
 from distutils.core import setup
+from trombi import version
 
 setup(
     name='trombi',
-    version='0.8',
+    version='.'.join(map(str, version)),
     description='CouchDB client for Tornado',
     license='MIT',
     author='Inoi Oy',
