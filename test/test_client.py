@@ -25,7 +25,7 @@ from __future__ import with_statement
 from datetime import datetime
 from nose.tools import eq_ as eq
 from couch_util import setup, teardown, with_couchdb
-from util import with_ioloop, assert_raises, DatetimeEncoder
+from util import with_ioloop, DatetimeEncoder
 
 try:
     import json
@@ -35,6 +35,7 @@ import urllib
 
 import trombi
 import trombi.errors
+
 
 def test_from_uri():
     db = trombi.from_uri('http://1.2.3.4/foobar')
@@ -46,6 +47,7 @@ def test_from_uri():
     assert isinstance(db.server, trombi.Server)
     eq(db.baseurl, 'http://1.2.3.4:1122/foobar')
     eq(db.name, 'foobar')
+
 
 @with_ioloop
 def test_cannot_connect(ioloop):
@@ -59,6 +61,7 @@ def test_cannot_connect(ioloop):
     s.create('couchdb-database', callback=create_callback)
     ioloop.start()
 
+
 @with_ioloop
 @with_couchdb
 def test_create_db(baseurl, ioloop):
@@ -69,10 +72,10 @@ def test_create_db(baseurl, ioloop):
         assert 'couchdb-database' in json.load(f)
         ioloop.stop()
 
-
     s = trombi.Server(baseurl, io_loop=ioloop)
     s.create('couchdb-database', callback=create_callback)
     ioloop.start()
+
 
 @with_ioloop
 @with_couchdb
@@ -96,6 +99,7 @@ def test_db_exists(baseurl, ioloop):
     s.create('couchdb-database', callback=first_callback)
     ioloop.start()
 
+
 @with_ioloop
 @with_couchdb
 def test_invalid_db_name(baseurl, ioloop):
@@ -109,6 +113,7 @@ def test_invalid_db_name(baseurl, ioloop):
     s.create('this name is invalid', callback=callback)
     ioloop.start()
 
+
 @with_ioloop
 @with_couchdb
 def test_get_create_doesnt_yet_exist(baseurl, ioloop):
@@ -120,6 +125,7 @@ def test_get_create_doesnt_yet_exist(baseurl, ioloop):
     s = trombi.Server(baseurl, io_loop=ioloop)
     s.get('nonexistent', create=True, callback=callback)
     ioloop.start()
+
 
 @with_ioloop
 @with_couchdb
@@ -137,10 +143,12 @@ def test_get_create_already_exists(baseurl, ioloop):
     s.create('new', callback=create_callback)
     ioloop.start()
 
+
 @with_ioloop
 @with_couchdb
 def test_delete_db(baseurl, ioloop):
     s = trombi.Server(baseurl, io_loop=ioloop)
+
     def create_callback(db):
         s.delete('testdatabase', callback=delete_callback)
 
@@ -152,6 +160,7 @@ def test_delete_db(baseurl, ioloop):
 
     s.create('testdatabase', callback=create_callback)
     ioloop.start()
+
 
 @with_ioloop
 @with_couchdb
@@ -165,6 +174,7 @@ def test_delete_db_not_exists(baseurl, ioloop):
     s = trombi.Server(baseurl, io_loop=ioloop)
     s.delete('testdatabase', callback=callback)
     ioloop.start()
+
 
 @with_ioloop
 @with_couchdb
@@ -188,6 +198,7 @@ def test_list_databases(baseurl, ioloop):
     s.create('testdb1', callback=create_first)
     ioloop.start()
 
+
 @with_ioloop
 @with_couchdb
 def test_open_database(baseurl, ioloop):
@@ -205,6 +216,7 @@ def test_open_database(baseurl, ioloop):
     s.create('testdb1', callback=create_callback)
     ioloop.start()
 
+
 @with_ioloop
 @with_couchdb
 def test_open_nonexisting_database(baseurl, ioloop):
@@ -219,6 +231,7 @@ def test_open_nonexisting_database(baseurl, ioloop):
     s.get('testdb1', callback=callback)
     ioloop.start()
 
+
 @with_ioloop
 @with_couchdb
 def test_open_database_bad_name(baseurl, ioloop):
@@ -232,6 +245,7 @@ def test_open_database_bad_name(baseurl, ioloop):
 
     s.get('not a valid name', callback=callback)
     ioloop.start()
+
 
 @with_ioloop
 @with_couchdb
@@ -254,6 +268,7 @@ def test_create_document(baseurl, ioloop):
     s = trombi.Server(baseurl, io_loop=ioloop)
     s.create('testdb', callback=create_db_callback)
     ioloop.start()
+
 
 @with_ioloop
 @with_couchdb
@@ -278,6 +293,7 @@ def test_create_document_with_slash(baseurl, ioloop):
     s = trombi.Server(baseurl, io_loop=ioloop)
     s.create('testdb', callback=create_db_callback)
     ioloop.start()
+
 
 @with_ioloop
 @with_couchdb
@@ -373,6 +389,7 @@ def test_create_document_custom_id(baseurl, ioloop):
     s.create('testdb', callback=do_test)
     ioloop.start()
 
+
 @with_ioloop
 @with_couchdb
 def test_delete_document(baseurl, ioloop):
@@ -398,6 +415,7 @@ def test_delete_document(baseurl, ioloop):
     s = trombi.Server(baseurl, io_loop=ioloop)
     s.create('testdb', callback=do_test)
     ioloop.start()
+
 
 @with_ioloop
 @with_couchdb
@@ -448,6 +466,7 @@ def test_delete_document_wrong_rev(baseurl, ioloop):
     s.create('testdb', callback=do_test)
     ioloop.start()
 
+
 @with_ioloop
 @with_couchdb
 def test_delete_document_invalid_rev(baseurl, ioloop):
@@ -471,6 +490,7 @@ def test_delete_document_invalid_rev(baseurl, ioloop):
     s = trombi.Server(baseurl, io_loop=ioloop)
     s.create('testdb', callback=do_test)
     ioloop.start()
+
 
 @with_ioloop
 @with_couchdb
@@ -570,6 +590,7 @@ def test_get_document_does_not_exist(baseurl, ioloop):
     s.create('testdb', callback=create_db_callback)
     ioloop.start()
 
+
 @with_ioloop
 @with_couchdb
 def test_save_attachment_inline(baseurl, ioloop):
@@ -589,6 +610,7 @@ def test_save_attachment_inline(baseurl, ioloop):
     s = trombi.Server(baseurl, io_loop=ioloop)
     s.create('testdb', callback=create_db_callback)
     ioloop.start()
+
 
 @with_ioloop
 @with_couchdb
@@ -613,6 +635,7 @@ def test_save_attachment_inline_custom_content_type(baseurl, ioloop):
     s.create('testdb', callback=create_db_callback)
     ioloop.start()
 
+
 @with_ioloop
 @with_couchdb
 def test_save_attachment(baseurl, ioloop):
@@ -636,6 +659,7 @@ def test_save_attachment(baseurl, ioloop):
     s.create('testdb', callback=create_db_callback)
     ioloop.start()
 
+
 @with_ioloop
 @with_couchdb
 def test_save_attachment_wrong_rev(baseurl, ioloop):
@@ -658,6 +682,7 @@ def test_save_attachment_wrong_rev(baseurl, ioloop):
     s = trombi.Server(baseurl, io_loop=ioloop)
     s.create('testdb', callback=do_test)
     ioloop.start()
+
 
 @with_ioloop
 @with_couchdb
@@ -684,6 +709,7 @@ def test_load_attachment(baseurl, ioloop):
     s.create('testdb', callback=create_db_callback)
     ioloop.start()
 
+
 @with_ioloop
 @with_couchdb
 def test_load_unkonwn_attachment(baseurl, ioloop):
@@ -695,7 +721,6 @@ def test_load_unkonwn_attachment(baseurl, ioloop):
             )
 
     def create_doc_callback(doc):
-        data = 'some textual data'
         doc.load_attachment('foobar', callback=data_callback)
 
     def data_callback(result):
@@ -707,6 +732,7 @@ def test_load_unkonwn_attachment(baseurl, ioloop):
     s = trombi.Server(baseurl, io_loop=ioloop)
     s.create('testdb', callback=create_db_callback)
     ioloop.start()
+
 
 @with_ioloop
 @with_couchdb
@@ -729,6 +755,7 @@ def test_load_inline_attachment(baseurl, ioloop):
     s = trombi.Server(baseurl, io_loop=ioloop)
     s.create('testdb', callback=create_db_callback)
     ioloop.start()
+
 
 @with_ioloop
 @with_couchdb
@@ -883,6 +910,7 @@ def test_load_view_with_results(baseurl, ioloop):
     s.create('testdb', callback=do_test)
     ioloop.start()
 
+
 @with_ioloop
 @with_couchdb
 def test_load_view_with_grouping_reduce(baseurl, ioloop):
@@ -978,7 +1006,6 @@ def test_load_view_no_design_doc(baseurl, ioloop):
             ioloop.stop()
         db.view('testview', 'all', load_view_cb, group='true')
 
-
     s = trombi.Server(baseurl, io_loop=ioloop)
     s.create('testdb', callback=create_db_callback)
     ioloop.start()
@@ -1066,7 +1093,8 @@ def test_temporary_view_nonempty_results(baseurl, ioloop):
 
             # Remove keys starting with _
             eq(
-                dict((k, v) for k, v in result['value'].items() if k[0] != '_'),
+                dict((k, v) for k, v in result['value'].items()
+                     if k[0] != '_'),
                 {'foo': 'bar'}
             )
             eq(result['key'], None)
@@ -1078,6 +1106,7 @@ def test_temporary_view_nonempty_results(baseurl, ioloop):
     s = trombi.Server(baseurl, io_loop=ioloop)
     s.create('testdb', callback=do_test)
     ioloop.start()
+
 
 @with_ioloop
 @with_couchdb
@@ -1151,6 +1180,7 @@ def test_copy_document_exists(baseurl, ioloop):
     s = trombi.Server(baseurl, io_loop=ioloop)
     s.create('testdb', callback=do_test)
     ioloop.start()
+
 
 @with_ioloop
 @with_couchdb
@@ -1304,6 +1334,7 @@ def test_view_results_with_offset(baseurl, ioloop):
     s.create('testdb', callback=do_test)
     ioloop.start()
 
+
 @with_ioloop
 @with_couchdb
 def test_bulk_insert(baseurl, ioloop):
@@ -1404,6 +1435,7 @@ def test_bulk_conflict(baseurl, ioloop):
     s.create('testdb', callback=do_test)
     ioloop.start()
 
+
 @with_ioloop
 @with_couchdb
 def test_bulk_insert_with_doc(baseurl, ioloop):
@@ -1419,7 +1451,6 @@ def test_bulk_insert_with_doc(baseurl, ioloop):
             ioloop.stop()
 
         db.set('mydoc', {'some': 'data'}, doc_created_cb)
-
 
     s = trombi.Server(baseurl, io_loop=ioloop)
     s.create('testdb', callback=do_test)
@@ -1442,24 +1473,24 @@ def test_bulk_insert_mixed(baseurl, ioloop):
 
         db.set('mydoc', {'some': 'data'}, doc_created_cb)
 
-
     s = trombi.Server(baseurl, io_loop=ioloop)
     s.create('testdb', callback=do_test)
     ioloop.start()
+
 
 @with_ioloop
 @with_couchdb
 def test_continuous_changes_feed(baseurl, ioloop):
     def do_test(db):
         runs = []
+
         def _got_change(change):
             runs.append(True)
             if len(runs) == 1:
                 # First pass, this should be the change
                 change['changes'][0].pop('rev')
-                eq(change, {'seq': 1, 'id': 'mydoc', 'changes':[{}]})
+                eq(change, {'seq': 1, 'id': 'mydoc', 'changes': [{}]})
                 ioloop.stop()
-
 
         def doc_created(response):
             assert not response.error
@@ -1476,6 +1507,7 @@ def test_continuous_changes_feed(baseurl, ioloop):
 @with_couchdb
 def test_long_polling_changes_feed(baseurl, ioloop):
     changes = []
+
     def do_test(db):
         def _got_change(change):
             changes.append(change.content)
@@ -1486,7 +1518,6 @@ def test_long_polling_changes_feed(baseurl, ioloop):
             db.changes(_got_change, feed='longpolling')
 
         db.set('mydoc', {'some': 'data'}, doc_created)
-
 
     s = trombi.Server(baseurl, io_loop=ioloop)
     s.create('testdb', callback=do_test)
@@ -1500,6 +1531,7 @@ def test_long_polling_changes_feed(baseurl, ioloop):
 @with_couchdb
 def test_long_polling_before_doc_created(baseurl, ioloop):
     changes = []
+
     def do_test(db):
         def _got_change(change):
             changes.append(change.content)
@@ -1510,7 +1542,6 @@ def test_long_polling_before_doc_created(baseurl, ioloop):
 
         db.changes(_got_change, feed='longpoll', timeout=2)
         db.set('mydoc', {'some': 'data'}, doc_created)
-
 
     s = trombi.Server(baseurl, io_loop=ioloop)
     s.create('testdb', callback=do_test)
@@ -1523,6 +1554,7 @@ def test_long_polling_before_doc_created(baseurl, ioloop):
 def test_custom_encoder():
     s = trombi.Server('http://localhost:5984', json_encoder=DatetimeEncoder)
     json.dumps({'foo': datetime.now()}, cls=s._json_encoder)
+
 
 def test_custom_encoder_from_uri():
     db = trombi.from_uri('http://localhost:5984/testdb/',

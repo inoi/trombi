@@ -40,14 +40,17 @@ except ImportError:
 
 import trombi.errors
 
+
 def from_uri(uri, fetch_args=None, io_loop=None, **kwargs):
     import urlparse
 
     p = urlparse.urlparse(uri)
     if p.params or p.query or p.fragment:
-        raise ValueError('Invalid database address: %s (extra query params)' % uri)
+        raise ValueError(
+            'Invalid database address: %s (extra query params)' % uri)
     if p.scheme != 'http':
-        raise ValueError('Invalid database address: %s (only http:// is supported)' % uri)
+        raise ValueError(
+            'Invalid database address: %s (only http:// is supported)' % uri)
 
     baseurl = urlparse.urlunsplit((p.scheme, p.netloc, '', '', ''))
     server = Server(baseurl, fetch_args, io_loop=io_loop, **kwargs)
@@ -55,11 +58,13 @@ def from_uri(uri, fetch_args=None, io_loop=None, **kwargs):
     db_name = p.path.lstrip('/').rstrip('/')
     return Database(server, db_name)
 
+
 class TrombiError(object):
     """
     A common error class denoting an error that has happened
     """
     error = True
+
 
 class TrombiErrorResponse(TrombiError):
     def __init__(self, errno, msg):
@@ -78,6 +83,7 @@ class TrombiObject(object):
 
     """
     error = False
+
 
 class TrombiResult(TrombiObject):
     """
@@ -110,6 +116,7 @@ def _error_response(response):
     except (KeyError, TypeError):
         # TypeError is risen if the result is a list
         return TrombiErrorResponse(response.code, content)
+
 
 class Server(TrombiObject):
     def __init__(self, baseurl, fetch_args=None, io_loop=None,
@@ -224,6 +231,7 @@ class Server(TrombiObject):
             _really_callback,
             )
 
+
 class Database(TrombiObject):
     def __init__(self, server, name):
         self.server = server
@@ -239,7 +247,7 @@ class Database(TrombiObject):
             url = '%s/%s' % (self.baseurl, url)
         return self.server._fetch(url, *args, **kwargs)
 
-    def set(self, *args, **kwargs): 
+    def set(self, *args, **kwargs):
         if len(args) == 2:
             data, callback = args
             doc_id = None
@@ -279,7 +287,6 @@ class Database(TrombiObject):
         else:
             url = ''
             method = 'POST'
-
 
         for name, attachment in attachments.items():
             content_type, attachment_data = attachment
@@ -400,7 +407,7 @@ class Database(TrombiObject):
     def delete(self, data, callback):
         def _really_callback(response):
             try:
-                data = json.loads(response.body)
+                json.loads(response.body)
             except ValueError:
                 callback(_error_response(response))
                 return
@@ -465,6 +472,7 @@ class Database(TrombiObject):
                 callback(TrombiResult(json.loads(response.body)))
 
         stream_buffer = []
+
         def _stream(text):
             text = text.strip()
             if not text:
@@ -582,8 +590,6 @@ class Document(collections.MutableMapping, TrombiObject):
 
         headers = {'Content-Type': type, 'Expect': ''}
 
-        doc_id = urllib.quote(self.id)
-
         self.db._fetch(
             '%s/%s?rev=%s' % (
                 urllib.quote(self.id, safe=''),
@@ -628,11 +634,13 @@ class Document(collections.MutableMapping, TrombiObject):
             method='DELETE',
             )
 
+
 class BulkError(TrombiError):
     def __init__(self, data):
         self.error_type = data['error']
         self.reason = data.get('reason', None)
         self.raw = data
+
 
 class BulkObject(TrombiObject, collections.Mapping):
     def __init__(self, data):
@@ -649,6 +657,7 @@ class BulkObject(TrombiObject, collections.Mapping):
 
     def __getitem__(self, key):
         return self._data[key]
+
 
 class BulkResult(TrombiResult, collections.Sequence):
     def __init__(self, result):
@@ -667,6 +676,7 @@ class BulkResult(TrombiResult, collections.Sequence):
 
     def __getitem__(self, key):
         return self.content[key]
+
 
 class ViewResult(TrombiObject, collections.Sequence):
     def __init__(self, result):
