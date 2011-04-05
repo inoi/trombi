@@ -305,7 +305,7 @@ argument.
       *all_or_nothing* flag set to *true*. For more information, see
       `CouchDB bulk document API`_.
 
-      .. _CouchDB bulk API: http://wiki.apache.org/couchdb/HTTP_Bulk_Document_API
+      .. _CouchDB bulk document API: http://wiki.apache.org/couchdb/HTTP_Bulk_Document_API
 
    .. method:: view(design_doc, viewname, callback[, **kwargs])
 
