@@ -98,7 +98,7 @@ class TrombiResult(TrombiObject):
 
 
 def _jsonize_params(params):
-    result = {}
+    result = dict()
     for key, value in params.iteritems():
         result[key] = json.dumps(value)
     return urllib.urlencode(result)
@@ -459,7 +459,7 @@ class Database(TrombiObject):
             body=json.dumps(payload),
             )
 
-    def changes(self, callback, timeout=60, feed='normal', **kw):
+    def changes(self, callback, timeout=None, feed='normal', **kw):
         def _really_callback(response):
             log.debug('Changes feed response: %s', response)
             if response.code != 200:
@@ -472,7 +472,7 @@ class Database(TrombiObject):
             else:
                 callback(TrombiResult(json.loads(response.body)))
 
-        stream_buffer = []
+        stream_buffer = list()
 
         def _stream(text):
             text = text.strip()
@@ -495,13 +495,11 @@ class Database(TrombiObject):
             stream_buffer[:] = chunks[1:]
         couchdb_params = kw
         couchdb_params['feed'] = feed
-        # CouchDB takes timeouts in milliseconds
-        couchdb_params['timeout'] = timeout * 1000
+        if timeout is not None:
+            # CouchDB takes timeouts in milliseconds
+            couchdb_params['timeout'] = timeout * 1000
         url = '_changes?%s' % urllib.urlencode(couchdb_params)
-        params = {
-            'request_timeout': float(timeout),
-            'connect_timeout': float(timeout),
-            }
+        params = dict()
         if feed == 'continuous':
             params['streaming_callback'] = _stream
 

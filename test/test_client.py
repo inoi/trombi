@@ -1516,7 +1516,7 @@ def test_long_polling_changes_feed(baseurl, ioloop):
 
         def doc_created(response):
             assert not response.error
-            db.changes(_got_change, feed='longpolling')
+            db.changes(_got_change, feed='longpoll')
 
         db.set('mydoc', {'some': 'data'}, doc_created)
 
