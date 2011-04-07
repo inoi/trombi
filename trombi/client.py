@@ -131,9 +131,6 @@ class Server(TrombiObject):
         else:
             self._fetch_args = fetch_args
 
-        self._default_args = {
-            'headers': HTTPHeaders({'Content-Type': 'application/json'})
-            }
         self.io_loop = io_loop
         # We can assign None to _json_encoder as the json (or
         # simplejson) then defaults to json.JSONEncoder
@@ -147,8 +144,12 @@ class Server(TrombiObject):
             )
 
     def _fetch(self, *args, **kwargs):
-        # just a convenince wrapper
-        fetch_args = self._default_args.copy()
+        # This is just a convenince wrapper for _client.fetch
+
+        # Set default arguments for a fetch
+        fetch_args = {
+            'headers': HTTPHeaders({'Content-Type': 'application/json'})
+        }
         fetch_args.update(self._fetch_args)
         fetch_args.update(kwargs)
         self._client.fetch(*args, **fetch_args)
