@@ -285,6 +285,15 @@ argument.
       should always check for *None* before checking the *error*
       attribute of the result object.
 
+   .. method:: get_attachment(doc_id, attachment_name, callback)
+
+      Load the attachment *attachment_name* of the document *doc_id*.
+      On success, *callback* is called with the raw attachment data.
+      If the given document or attachment is not found, *callback* is
+      called with *None* as an argument. On other errors, *callback*
+      is called with a :class:`TrombiErrorResponse` object as an
+      argument.
+
    .. method:: delete(doc, callback)
 
       Deletes a document in database. *doc* has to be a

@@ -360,6 +360,73 @@ def test_get_document_with_attachments(baseurl, ioloop):
 
 @with_ioloop
 @with_couchdb
+def test_get_attachment(baseurl, ioloop):
+    def do_test(db):
+        def start():
+            db.set(
+                {'testvalue': 'something'},
+                doc_created,
+                attachments={'foo': (None, 'bar')},
+                )
+
+        def doc_created(doc):
+            db.get_attachment(doc.id, 'foo', check_attachment)
+
+        def check_attachment(data):
+            eq(data, 'bar')
+            ioloop.stop()
+
+        start()
+
+    s = trombi.Server(baseurl, io_loop=ioloop)
+    s.create('testdb', callback=do_test)
+    ioloop.start()
+
+
+@with_ioloop
+@with_couchdb
+def test_get_attachment_doc_doesnt_exist(baseurl, ioloop):
+    def do_test(db):
+        def start():
+            db.get_attachment('bar', 'foo', check_attachment)
+
+        def check_attachment(data):
+            eq(data, None)
+            ioloop.stop()
+
+        start()
+
+    s = trombi.Server(baseurl, io_loop=ioloop)
+    s.create('testdb', callback=do_test)
+    ioloop.start()
+
+
+@with_ioloop
+@with_couchdb
+def test_get_attachment_doc_exists_attachment_doesnt(baseurl, ioloop):
+    def do_test(db):
+        def start():
+            db.set(
+                {'testvalue': 'something'},
+                doc_created,
+                )
+
+        def doc_created(doc):
+            db.get_attachment(doc.id, 'foo', check_attachment)
+
+        def check_attachment(data):
+            eq(data, None)
+            ioloop.stop()
+
+        start()
+
+    s = trombi.Server(baseurl, io_loop=ioloop)
+    s.create('testdb', callback=do_test)
+    ioloop.start()
+
+
+@with_ioloop
+@with_couchdb
 def test_create_document_custom_id(baseurl, ioloop):
     def do_test(db):
         def create_doc_callback(doc):

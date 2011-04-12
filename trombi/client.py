@@ -341,6 +341,24 @@ class Database(TrombiObject):
             _really_callback,
             )
 
+    def get_attachment(self, doc_id, attachment_name, callback):
+        def _really_callback(response):
+            if response.code == 200:
+                callback(response.body)
+            elif response.code == 404:
+                # Document or attachment doesn't exist
+                callback(None)
+            else:
+                callback(_error_response(response))
+
+        doc_id = urllib.quote(doc_id, safe='')
+        attachment_name = urllib.quote(attachment_name, safe='')
+
+        self._fetch(
+            '%s/%s' % (doc_id, attachment_name),
+            _really_callback,
+            )
+
     def view(self, design_doc, viewname, callback, **kwargs):
         def _really_callback(response):
             if response.code == 200:
