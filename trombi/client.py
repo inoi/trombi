@@ -528,16 +528,11 @@ class Database(TrombiObject):
                 self.server.io_loop.add_callback(cb)
 
         couchdb_params = kw
+        couchdb_params['feed'] = feed
         if timeout is not None:
             # CouchDB takes timeouts in milliseconds
             couchdb_params['timeout'] = timeout * 1000
-
-        # As the feed type can not be encoded, we need to manually
-        # combine the feed type and the rest of the parameters.
-        query_str = '&'.join(
-            (urllib.urlencode({'feed': feed}), _jsonize_params(couchdb_params))
-        )
-        url = '_changes?%s' % query_str
+        url = '_changes?%s' % urllib.urlencode(couchdb_params)
         params = dict()
         if feed == 'continuous':
             params['streaming_callback'] = _stream
