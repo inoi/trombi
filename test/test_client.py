@@ -32,6 +32,8 @@ try:
     import json
 except ImportError:
     import simplejson as json
+
+import functools
 import urllib
 
 import trombi
@@ -1554,15 +1556,29 @@ def test_continuous_changes_feed(baseurl, ioloop):
 
         def _got_change(change):
             runs.append(True)
+            change['changes'][0].pop('rev')
+
             if len(runs) == 1:
-                # First pass, this should be the change
-                change['changes'][0].pop('rev')
+                # First change
                 eq(change, {'seq': 1, 'id': 'mydoc', 'changes': [{}]})
+
+            elif len(runs) == 2:
+                # Second change
+                eq(change, {'seq': 2, 'id': 'second_doc', 'changes': [{}]})
+
+                # Create another document
+                db.set('third_doc', {'still': 'more'}, lambda x: None)
+
+            elif len(runs) == 3:
+                eq(change, {'seq': 3, 'id': 'third_doc', 'changes': [{}]})
                 ioloop.stop()
 
         def doc_created(response):
             assert not response.error
             db.changes(_got_change, feed='continuous')
+
+            # Create another document
+            db.set('second_doc', {'more': 'data'}, lambda x: None)
 
         db.set('mydoc', {'some': 'data'}, doc_created)
 

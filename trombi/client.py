@@ -23,6 +23,7 @@
 
 """Asynchronous CouchDB client"""
 
+import functools
 import logging
 import re
 import urllib
@@ -491,27 +492,41 @@ class Database(TrombiObject):
             else:
                 callback(TrombiResult(json.loads(response.body)))
 
-        stream_buffer = list()
+        stream_buffer = []
 
         def _stream(text):
-            text = text.strip()
-            if not text:
-                return
-
             stream_buffer.append(text)
             chunks = ''.join(stream_buffer).split('\n')
-            if chunks[0]:
+
+            # The last chunk is either an empty string or an
+            # incomplete line. Save it for the next round. The [:]
+            # syntax is used because of variable scoping.
+            stream_buffer[:] = [chunks.pop()]
+
+            for chunk in chunks:
+                if not chunk.strip():
+                    continue
+
                 try:
-                    obj = json.loads(chunks[0])
-                    callback(obj)
+                    obj = json.loads(chunk)
                 except ValueError:
                     # JSON parsing failed. Apparently we have some
-                    # gibberish at our hands, just discard it by
-                    # silently ignoring the JSON error
-                    pass
+                    # gibberish on our hands, just discard it.
+                    log.warning('Invalid changes feed line: %s' % chunk)
+                    continue
 
-            # Need to use [:] here due to scoping issues
-            stream_buffer[:] = chunks[1:]
+                # "Escape" the streaming_callback context by invoking
+                # the handler as an ioloop callback. This makes it
+                # possible to start new HTTP requests in the handler
+                # (it is impossible in the streaming_callback
+                # context). Tornado runs these callbacks in the order
+                # they were added, so this works correctly.
+                #
+                # This also relieves us from handling exceptions in
+                # the handler.
+                cb = functools.partial(callback, obj)
+                self.server.io_loop.add_callback(cb)
+
         couchdb_params = kw
         couchdb_params['feed'] = feed
         if timeout is not None:
