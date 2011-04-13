@@ -534,8 +534,17 @@ class Database(TrombiObject):
 
         # As the feed type can not be encoded, we need to manually
         # combine the feed type and the rest of the parameters.
+        nonjson_arguments = {
+            'feed': feed,
+        }
+        filter_doc = couchdb_params.pop('filter', None)
+
+        if filter_doc is not None:
+            nonjson_arguments['filter'] = filter_doc
+
         query_str = '&'.join(
-            (urllib.urlencode({'feed': feed}), _jsonize_params(couchdb_params))
+            (urllib.urlencode(nonjson_arguments),
+             _jsonize_params(couchdb_params))
         )
         url = '_changes?%s' % query_str
         params = dict()
