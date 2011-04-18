@@ -1407,6 +1407,48 @@ def test_view_results_with_offset(baseurl, ioloop):
 
 @with_ioloop
 @with_couchdb
+def test_view_results_include_docs(baseurl, ioloop):
+    def do_test(db):
+        def create_view_callback(response):
+            eq(response.code, 201)
+            db.set({'data': 'data'}, create_first_doc_cb)
+
+        def create_first_doc_cb(response):
+            db.set({'another': 'data'}, create_docs_cb)
+
+        def create_docs_cb(doc):
+            db.view('testview', 'all', load_view_cb, include_docs=True)
+
+        def load_view_cb(result):
+            eq(result.error, False)
+            eq(len(result), 2)
+            eq(result.total_rows, 2)
+            assert all(isinstance(x['doc'], trombi.Document) for x in result)
+            ioloop.stop()
+
+        db.server._fetch(
+            '%stestdb/_design/testview' % baseurl,
+            create_view_callback,
+            method='PUT',
+            body=json.dumps(
+                {
+                    'language': 'javascript',
+                    'views': {
+                        'all': {
+                            'map': 'function (doc) { emit(null, doc) }',
+                            }
+                        }
+                    }
+                )
+            )
+
+    s = trombi.Server(baseurl, io_loop=ioloop)
+    s.create('testdb', callback=do_test)
+    ioloop.start()
+
+
+@with_ioloop
+@with_couchdb
 def test_bulk_insert(baseurl, ioloop):
     def do_test(db):
         datas = [

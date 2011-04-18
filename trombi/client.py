@@ -364,7 +364,7 @@ class Database(TrombiObject):
         def _really_callback(response):
             if response.code == 200:
                 callback(
-                    ViewResult(json.loads(response.body))
+                    ViewResult(json.loads(response.body), db=self)
                     )
             else:
                 callback(_error_response(response))
@@ -408,7 +408,7 @@ class Database(TrombiObject):
         def _really_callback(response):
             if response.code == 200:
                 callback(
-                    ViewResult(json.loads(response.body))
+                    ViewResult(json.loads(response.body), db=self)
                     )
             else:
                 callback(_error_response(response))
@@ -712,19 +712,25 @@ class BulkResult(TrombiResult, collections.Sequence):
 
 
 class ViewResult(TrombiObject, collections.Sequence):
-    def __init__(self, result):
+    def __init__(self, result, db=None):
+        self.db = db
         self.total_rows = result.get('total_rows', len(result['rows']))
         self._rows = result['rows']
         self.offset = result.get('offset', 0)
+
+    def _format_row(self, row):
+        if 'doc' in row:
+            row['doc'] = Document(self.db, row['doc'])
+        return row
 
     def __len__(self):
         return len(self._rows)
 
     def __iter__(self):
-        return iter(self._rows)
+        return (self._format_row(x) for x in self._rows)
 
     def __getitem__(self, key):
-        return self._rows[key]
+        return self._format_row(self._rows[key])
 
 
 class Paginator(TrombiObject):
