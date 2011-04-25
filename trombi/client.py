@@ -619,6 +619,11 @@ class Document(collections.MutableMapping, TrombiObject):
             data = json.loads(response.body)
             assert data['id'] == self.id
             self.rev = data['rev']
+            self.attachments[name] = {
+                'content_type': type,
+                'length': len(data),
+                'stub': True,
+            }
             callback(self)
 
         headers = {'Content-Type': type, 'Expect': ''}
