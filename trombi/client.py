@@ -28,6 +28,7 @@ import logging
 import re
 import urllib
 import collections
+import tornado.ioloop
 
 from base64 import b64encode, b64decode
 from tornado.httpclient import AsyncHTTPClient
@@ -132,7 +133,10 @@ class Server(TrombiObject):
         else:
             self._fetch_args = fetch_args
 
-        self.io_loop = io_loop
+        if io_loop is None:
+            self.io_loop = tornado.ioloop.IOLoop.instance()
+        else:
+            self.io_loop = io_loop
         # We can assign None to _json_encoder as the json (or
         # simplejson) then defaults to json.JSONEncoder
         self._json_encoder = json_encoder
