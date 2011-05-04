@@ -99,6 +99,13 @@ class TrombiResult(TrombiObject):
         super(TrombiResult, self).__init__()
 
 
+class TrombiDict(dict):
+    error = False
+
+    def to_basetype(self):
+        return dict(self)
+
+
 def _jsonize_params(params):
     result = dict()
     for key, value in params.iteritems():
@@ -257,7 +264,7 @@ class Database(TrombiObject):
     def info(self, callback):
         def _really_callback(response):
             if response.code == 200:
-                callback(json.loads(response.body))
+                callback(TrombiDict(json.loads(response.body)))
             else:
                 callback(_error_response(response))
 

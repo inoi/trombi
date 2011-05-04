@@ -260,6 +260,7 @@ def test_db_info(baseurl, ioloop):
         db.info(check_info)
 
     def check_info(info):
+        eq(info.error, False)
         eq(info['db_name'], 'testdb')
         eq(info['doc_count'], 0)
         assert 'update_seq' in info
