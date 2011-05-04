@@ -244,6 +244,13 @@ argument.
    as they are created via :meth:`Server.create` and
    :meth:`Server.get`. Subclass of :class:`TrombiObject`.
 
+   .. method:: info(callback)
+
+      Request database information. Calls callback with a dict that
+      contains the info (see `here`__ for the dict contents).
+
+      __ http://techzone.couchbase.com/sites/default/files/uploads/all/documentation/couchbase-api-db.html#couchbase-api-db_db_get
+
    .. method:: set([doc_id, ]data, callback[, attachments=None])
 
       Creates a new or modifies an existing document in the database.
