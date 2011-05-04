@@ -252,6 +252,26 @@ def test_open_database_bad_name(baseurl, ioloop):
 
 @with_ioloop
 @with_couchdb
+def test_db_info(baseurl, ioloop):
+    s = trombi.Server(baseurl, io_loop=ioloop)
+
+    def get_info(db):
+        print 'heere!'
+        db.info(check_info)
+
+    def check_info(info):
+        eq(info['db_name'], 'testdb')
+        eq(info['doc_count'], 0)
+        assert 'update_seq' in info
+        assert 'disk_size' in info
+        ioloop.stop()
+
+    s.create('testdb', callback=get_info)
+    ioloop.start()
+
+
+@with_ioloop
+@with_couchdb
 def test_create_document(baseurl, ioloop):
     def create_db_callback(db):
         db.set(

@@ -254,6 +254,15 @@ class Database(TrombiObject):
             url = '%s/%s' % (self.baseurl, url)
         return self.server._fetch(url, *args, **kwargs)
 
+    def info(self, callback):
+        def _really_callback(response):
+            if response.code == 200:
+                callback(json.loads(response.body))
+            else:
+                callback(_error_response(response))
+
+        self._fetch('', _really_callback)
+
     def set(self, *args, **kwargs):
         if len(args) == 2:
             data, callback = args
