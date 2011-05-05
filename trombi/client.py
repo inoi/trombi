@@ -99,9 +99,7 @@ class TrombiResult(TrombiObject):
         super(TrombiResult, self).__init__()
 
 
-class TrombiDict(dict):
-    error = False
-
+class TrombiDict(TrombiObject, dict):
     def to_basetype(self):
         return dict(self)
 
@@ -544,7 +542,7 @@ class Database(TrombiObject):
                 #
                 # This also relieves us from handling exceptions in
                 # the handler.
-                cb = functools.partial(callback, obj)
+                cb = functools.partial(callback, TrombiDict(obj))
                 self.server.io_loop.add_callback(cb)
 
         couchdb_params = kw
