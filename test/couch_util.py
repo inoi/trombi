@@ -1,4 +1,4 @@
-# Copuright (c) 2011 Jyrki Pulliainen <jyrki@dywypi.org>
+# Copyright (c) 2011 Jyrki Pulliainen <jyrki@dywypi.org>
 # Copyright (c) 2010 Inoi Oy
 #
 # Permission is hereby granted, free of charge, to any person
