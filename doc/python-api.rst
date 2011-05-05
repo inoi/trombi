@@ -86,13 +86,22 @@ Result objects
 .. class:: TrombiResult
 
    A generic result indicating a succesfull call. Used for example in
-   :meth:`Database.list`. Subclasses
-   :class:`TrombiObject`.
+   :meth:`Database.list`. Subclasses :class:`TrombiObject`.
 
    .. attribute:: content
 
       Contains the result of the query. The result format is not
       specified.
+
+.. class:: TrombiDict
+
+   A dict-like object for successful responses. Subclasses
+   :class:`TrombiObject`.
+
+   .. method:: to_basetype()
+
+      Returns the copy of the contents of the :class:`TrombiDict`
+      instance as a normal dict.
 
 .. class:: ViewResult
 
@@ -246,8 +255,9 @@ argument.
 
    .. method:: info(callback)
 
-      Request database information. Calls callback with a dict that
-      contains the info (see `here`__ for the dict contents).
+      Request database information. Calls callback with a
+      :class:`TrombiDict` that contains the info (see `here`__ for the
+      dict fields).
 
       __ http://techzone.couchbase.com/sites/default/files/uploads/all/documentation/couchbase-api-db.html#couchbase-api-db_db_get
 
@@ -358,25 +368,31 @@ argument.
 
    .. method:: changes(callback[, feed_type='normal', timeout=60, **kw])
 
-      Fetches the ``_changes`` feed for the database. Has two optional
-      keyword arguments, *timeout* and *feed_type*. *timeout* is
-      in seconds and defaults to 60 seconds, which is CouchDB's
-      default timeout for changes feed. *feed_type* is described in
-      `CouchDB database API`_. Additional keyword arguments are
-      converted to query parameters for the changes feed. For possible
-      keyword arguments, see `CouchDB database API`_ entry of changes
-      feed.
+      Fetches the ``_changes`` feed for the database.
 
-      If *feed_type* is ``continous``, the callback is passed as
-      both streaming and regular callback to the fetch function. The
-      callback is called every time the changes feed sends a line of
-      text that is JSON encoded. The argument to the callback is this
-      line decoded. When the changes feed closes for some reason, the
-      callback is called with *None* as an argument if the feed
-      closed properly (ie. server closed the request with ``200 OK``).
-      Otherwise the callback is called with the error object.
+      *feed_type* is ``"normal"``, ``"longpoll"`` or ``"continuous"``.
+      The different feed types are described here__.
 
-      .. _CouchDB database API: http://wiki.apache.org/couchdb/HTTP_database_API#Changes
+      __ `changes feed API`_
+
+      With the continuous and longpoll feed types, the *timeout*
+      parameter tells the server to close connection after this many
+      seconds of idle time, even if there are no results. The default
+      value of 60 seconds is also the default for CouchDB.
+
+      Additional keyword arguments are converted to query parameters
+      for the changes feed. For possible keyword arguments, see here__.
+
+      __ `changes feed API`_
+
+      If *feed_type* is ``continous``, the callback is called for each
+      line CouchDB sends. The line is JSON decoded and wrapped in a
+      :class:`TrombiDict`, to denote a successful callback invocation.
+      When the server timeout occurs, the callback is called with
+      *None* as an argument. On error (e.g. HTTP client timeout), the
+      callback is called with a :class:`TrombiErrorResponse` object.
+
+      .. _changes feed API: http://wiki.apache.org/couchdb/HTTP_database_API#Changes
 
    .. method:: temporary_view(callback, map_fun[, reduce_fun=None, language='javascript', **kwargs])
 
