@@ -6,10 +6,10 @@ setup(
     version='0.9.2',
     description='CouchDB client for Tornado',
     license='MIT',
-    author='Inoi Oy',
-    author_email='inoi@inoi.fi',
+    author='Jyrki Pulliainen',
+    author_email='jyrki@dywypi.org',
     maintainer='Jyrki Pulliainen',
-    maintainer_email='jyrki.pulliainen@inoi.fi',
+    maintainer_email='jyrki@dywypi.org',
     url='http://github.com/inoi/trombi/',
     packages=['trombi'],
     classifiers=[
