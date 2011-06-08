@@ -742,7 +742,7 @@ class ViewResult(TrombiObject, collections.Sequence):
         self.offset = result.get('offset', 0)
 
     def _format_row(self, row):
-        if 'doc' in row:
+        if 'doc' in row and row['doc']:
             row['doc'] = Document(self.db, row['doc'])
         return row
 
