@@ -24,12 +24,11 @@ import json
 import os
 import sys
 import errno
-import new
 import shutil
+import types
 import nose.tools
 
 from datetime import datetime
-from tornado.httpserver import HTTPServer
 from tornado.ioloop import IOLoop
 
 def unrandom(random=None):
@@ -58,7 +57,7 @@ def with_ioloop(func):
         # Override ioloop's _run_callback to let all exceptions through
         def run_callback(self, callback):
             callback()
-        ioloop._run_callback = new.instancemethod(run_callback, ioloop)
+        ioloop._run_callback = types.MethodType(run_callback, ioloop)
 
         return func(ioloop, *args, **kwargs)
 
@@ -67,7 +66,9 @@ def with_ioloop(func):
 def mkdir(*a, **kw):
     try:
         os.mkdir(*a, **kw)
-    except OSError, e:
+    except OSError:
+        # Python 3
+        e = sys.exc_info()[1]
         if e.errno == errno.EEXIST:
             pass
         else:
@@ -119,7 +120,9 @@ def maketemp():
     tmp = os.path.join(tmp, name)
     try:
         shutil.rmtree(tmp)
-    except OSError, e:
+    except OSError:
+        # Python 3
+        e = sys.exc_info()[1]
         if e.errno == errno.ENOENT:
             pass
         else:
@@ -134,8 +137,9 @@ def assert_raises(excClass, callableObj, *args, **kwargs):
     """
     try:
         callableObj(*args, **kwargs)
-    except excClass, e:
-        return e
+    except excClass:
+        # Python 3
+        return sys.exc_info()[1]
     except:
         if hasattr(excClass,'__name__'): excName = excClass.__name__
         else: excName = str(excClass)

@@ -26,9 +26,17 @@
 import functools
 import logging
 import re
-import urllib
 import collections
 import tornado.ioloop
+
+try:
+    # Python 3
+    from urllib.parse import quote as urlquote
+    from urllib.parse import urlencode
+except ImportError:
+    # Python 2
+    from urllib import quote as urlquote
+    from urllib import urlencode
 
 from base64 import b64encode, b64decode
 from tornado.httpclient import AsyncHTTPClient
@@ -45,9 +53,14 @@ import trombi.errors
 
 
 def from_uri(uri, fetch_args=None, io_loop=None, **kwargs):
-    import urlparse
+    try:
+        # Python 3
+        from urllib.parse import urlparse, urlunsplit
+    except ImportError:
+        # Python 2
+        from urlparse import urlparse, urlunsplit
 
-    p = urlparse.urlparse(uri)
+    p = urlparse(uri)
     if p.params or p.query or p.fragment:
         raise ValueError(
             'Invalid database address: %s (extra query params)' % uri)
@@ -55,7 +68,7 @@ def from_uri(uri, fetch_args=None, io_loop=None, **kwargs):
         raise ValueError(
             'Invalid database address: %s (only http:// is supported)' % uri)
 
-    baseurl = urlparse.urlunsplit((p.scheme, p.netloc, '', '', ''))
+    baseurl = urlunsplit((p.scheme, p.netloc, '', '', ''))
     server = Server(baseurl, fetch_args, io_loop=io_loop, **kwargs)
 
     db_name = p.path.lstrip('/').rstrip('/')
@@ -106,9 +119,9 @@ class TrombiDict(TrombiObject, dict):
 
 def _jsonize_params(params):
     result = dict()
-    for key, value in params.iteritems():
+    for key, value in params.items():
         result[key] = json.dumps(value)
-    return urllib.urlencode(result)
+    return urlencode(result)
 
 
 def _error_response(response):
@@ -116,7 +129,7 @@ def _error_response(response):
         return TrombiErrorResponse(599, 'Unable to connect to CouchDB')
 
     try:
-        content = json.loads(response.body)
+        content = json.loads(response.body.decode('utf-8'))
     except ValueError:
         return TrombiErrorResponse(response.code, response.body)
     try:
@@ -234,7 +247,8 @@ class Server(TrombiObject):
     def list(self, callback):
         def _really_callback(response):
             if response.code == 200:
-                callback(Database(self, x) for x in json.loads(response.body))
+                body = response.body.decode('utf-8')
+                callback(Database(self, x) for x in json.loads(body))
             else:
                 callback(_error_response(response))
 
@@ -262,7 +276,8 @@ class Database(TrombiObject):
     def info(self, callback):
         def _really_callback(response):
             if response.code == 200:
-                callback(TrombiDict(json.loads(response.body)))
+                body = response.body.decode('utf-8')
+                callback(TrombiDict(json.loads(body)))
             else:
                 callback(_error_response(response))
 
@@ -279,7 +294,7 @@ class Database(TrombiObject):
                 'Database.set expected 2 or 3 arguments, got %d' % len(args))
 
         if kwargs:
-            if kwargs.keys() != ['attachments']:
+            if list(kwargs.keys()) != ['attachments']:
                 if len(kwargs) > 1:
                     raise TypeError(
                         '%s are invalid keyword arguments for this function') %(
@@ -287,7 +302,7 @@ class Database(TrombiObject):
                 else:
                     raise TypeError(
                         '%s is invalid keyword argument for this function' % (
-                            kwargs.keys()[0]))
+                            list(kwargs.keys())[0]))
 
             attachments = kwargs['attachments']
         else:
@@ -303,7 +318,7 @@ class Database(TrombiObject):
             doc_id = doc.id
 
         if doc_id is not None:
-            url = urllib.quote(doc_id, safe='')
+            url = urlquote(doc_id, safe='')
             method = 'PUT'
         else:
             url = ''
@@ -315,12 +330,12 @@ class Database(TrombiObject):
                 content_type = 'text/plain'
             doc.attachments[name] = {
                 'content_type': content_type,
-                'data': b64encode(attachment_data),
+                'data': b64encode(attachment_data).decode('utf-8'),
                 }
 
         def _really_callback(response):
             try:
-                content = json.loads(response.body)
+                content = json.loads(response.body.decode('utf-8'))
             except ValueError:
                 content = response.body
 
@@ -341,7 +356,7 @@ class Database(TrombiObject):
     def get(self, doc_id, callback, attachments=False):
         def _really_callback(response):
             if response.code == 200:
-                data = json.loads(response.body)
+                data = json.loads(response.body.decode('utf-8'))
                 doc = Document(self, data)
                 callback(doc)
             elif response.code == 404:
@@ -350,7 +365,7 @@ class Database(TrombiObject):
             else:
                 callback(_error_response(response))
 
-        doc_id = urllib.quote(doc_id, safe='')
+        doc_id = urlquote(doc_id, safe='')
 
         if attachments is True:
             doc_id += '?attachments=true'
@@ -370,8 +385,8 @@ class Database(TrombiObject):
             else:
                 callback(_error_response(response))
 
-        doc_id = urllib.quote(doc_id, safe='')
-        attachment_name = urllib.quote(attachment_name, safe='')
+        doc_id = urlquote(doc_id, safe='')
+        attachment_name = urlquote(attachment_name, safe='')
 
         self._fetch(
             '%s/%s' % (doc_id, attachment_name),
@@ -381,8 +396,9 @@ class Database(TrombiObject):
     def view(self, design_doc, viewname, callback, **kwargs):
         def _really_callback(response):
             if response.code == 200:
+                body = response.body.decode('utf-8')
                 callback(
-                    ViewResult(json.loads(response.body), db=self)
+                    ViewResult(json.loads(body), db=self)
                     )
             else:
                 callback(_error_response(response))
@@ -425,8 +441,9 @@ class Database(TrombiObject):
                        language='javascript', **kwargs):
         def _really_callback(response):
             if response.code == 200:
+                body = response.body.decode('utf-8')
                 callback(
-                    ViewResult(json.loads(response.body), db=self)
+                    ViewResult(json.loads(body), db=self)
                     )
             else:
                 callback(_error_response(response))
@@ -446,7 +463,7 @@ class Database(TrombiObject):
     def delete(self, data, callback):
         def _really_callback(response):
             try:
-                json.loads(response.body)
+                json.loads(response.body.decode('utf-8'))
             except ValueError:
                 callback(_error_response(response))
                 return
@@ -460,7 +477,7 @@ class Database(TrombiObject):
         else:
             doc = Document(self, data)
 
-        doc_id = urllib.quote(doc.id, safe='')
+        doc_id = urlquote(doc.id, safe='')
         self._fetch(
             '%s?rev=%s' % (doc_id, doc.rev),
             _really_callback,
@@ -471,7 +488,7 @@ class Database(TrombiObject):
         def _really_callback(response):
             if response.code == 200 or response.code == 201:
                 try:
-                    content = json.loads(response.body)
+                    content = json.loads(response.body.decode('utf-8'))
                 except ValueError:
                     callback(TrombiErrorResponse(response.code, response.body))
                 else:
@@ -508,12 +525,13 @@ class Database(TrombiObject):
                 # this, if the mode is continous
                 callback(None)
             else:
-                callback(TrombiResult(json.loads(response.body)))
+                body = response.body.decode('utf-8')
+                callback(TrombiResult(json.loads(body)))
 
         stream_buffer = []
 
         def _stream(text):
-            stream_buffer.append(text)
+            stream_buffer.append(text.decode('utf-8'))
             chunks = ''.join(stream_buffer).split('\n')
 
             # The last chunk is either an empty string or an
@@ -550,7 +568,7 @@ class Database(TrombiObject):
         if timeout is not None:
             # CouchDB takes timeouts in milliseconds
             couchdb_params['timeout'] = timeout * 1000
-        url = '_changes?%s' % urllib.urlencode(couchdb_params)
+        url = '_changes?%s' % urlencode(couchdb_params)
         params = dict()
         if feed == 'continuous':
             params['streaming_callback'] = _stream
@@ -614,7 +632,7 @@ class Document(collections.MutableMapping, TrombiObject):
                 callback(_error_response(response))
                 return
 
-            content = json.loads(response.body)
+            content = json.loads(response.body.decode('utf-8'))
             doc = Document(self.db, self.data)
             doc.attachments = self.attachments.copy()
             doc.id = content['id']
@@ -622,7 +640,7 @@ class Document(collections.MutableMapping, TrombiObject):
             callback(doc)
 
         self.db._fetch(
-            '%s' % urllib.quote(self.id, safe=''),
+            '%s' % urlquote(self.id, safe=''),
             _copy_done,
             allow_nonstandard_methods=True,
             method='COPY',
@@ -634,7 +652,7 @@ class Document(collections.MutableMapping, TrombiObject):
             if  response.code != 201:
                 callback(_error_response(response))
                 return
-            data = json.loads(response.body)
+            data = json.loads(response.body.decode('utf-8'))
             assert data['id'] == self.id
             self.rev = data['rev']
             self.attachments[name] = {
@@ -648,8 +666,8 @@ class Document(collections.MutableMapping, TrombiObject):
 
         self.db._fetch(
             '%s/%s?rev=%s' % (
-                urllib.quote(self.id, safe=''),
-                urllib.quote(name, safe=''),
+                urlquote(self.id, safe=''),
+                urlquote(name, safe=''),
                 self.rev),
             _really_callback,
             method='PUT',
@@ -667,12 +685,13 @@ class Document(collections.MutableMapping, TrombiObject):
         if (hasattr(self, 'attachments') and
             name in self.attachments and
             not self.attachments[name].get('stub', False)):
-            callback(b64decode(self.attachments[name]['data']))
+            data = self.attachments[name]['data'].encode('utf-8')
+            callback(b64decode(data))
         else:
             self.db._fetch(
                 '%s/%s' % (
-                    urllib.quote(self.id, safe=''),
-                    urllib.quote(name, safe='')
+                    urlquote(self.id, safe=''),
+                    urlquote(name, safe='')
                     ),
                 _really_callback,
                 )
@@ -824,7 +843,7 @@ class Paginator(TrombiObject):
             try:
                 self.start_doc_id = self.rows[0]['_id']
                 self.end_doc_id = self.rows[-1]['_id']
-            except IndexError, KeyError:
+            except (IndexError, KeyError):
                 # empty set
                 self.start_doc_id = None
                 self.end_doc_id = None

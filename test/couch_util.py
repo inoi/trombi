@@ -27,7 +27,16 @@ import os
 import shutil
 import subprocess
 import time
-import urllib2
+import sys
+
+try:
+    # Python 3
+    from urllib import request
+    from urllib.error import URLError
+except ImportError:
+    # Python 3
+    import urllib2 as request
+    from urllib2 import URLError
 
 import nose.tools
 from tornado.httpclient import HTTPClient
@@ -38,7 +47,9 @@ def setup():
     global _proc, baseurl
     try:
         shutil.rmtree('tmp')
-    except OSError, err:
+    except OSError:
+        # Python 3
+        err = sys.exc_info()[1]
         if err.errno != errno.ENOENT:
             raise
 
@@ -53,7 +64,7 @@ def setup():
     baseurl = 'http://localhost:%d/' % port
 
     with open(ini, 'w') as fobj:
-        print >>fobj, '''\
+        fobj.write('''\
 [couchdb]
 database_dir = %(dbdir)s
 view_index_dir = %(dbdir)s
@@ -64,7 +75,7 @@ bind_address = 127.0.0.1
 
 [log]
 file = %(log)s
-''' % dict(dbdir=dbdir, log=log, port=port)
+''' % dict(dbdir=dbdir, log=log, port=port))
 
     cmdline = 'couchdb -a %s' % ini
     null = open('/dev/null', 'w')
@@ -76,11 +87,11 @@ file = %(log)s
 
     while True:
         try:
-            f = urllib2.urlopen(baseurl)
-        except urllib2.URLError:
+            f = request.urlopen(baseurl)
+        except URLError:
             continue
         try:
-            data = json.load(f)
+            json.loads(f.read().decode('utf-8'))
         except ValueError:
             continue
         # Got a sensible response
@@ -101,7 +112,7 @@ def with_couchdb(func):
         # Delete all old databases
         response = cli.fetch('%s_all_dbs' % baseurl)
         try:
-            dbs = json.loads(response.body)
+            dbs = json.loads(response.body.decode('utf-8'))
         except ValueError:
             print >> sys.stderr, \
                 "CouchDB's response was invalid JSON: %s" % db_string
