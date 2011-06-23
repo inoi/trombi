@@ -256,7 +256,6 @@ def test_db_info(baseurl, ioloop):
     s = trombi.Server(baseurl, io_loop=ioloop)
 
     def get_info(db):
-        print 'heere!'
         db.info(check_info)
 
     def check_info(info):
