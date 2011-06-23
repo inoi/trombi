@@ -352,12 +352,19 @@ class Database(TrombiObject):
 
         doc_id = urllib.quote(doc_id, safe='')
 
+        kwargs = {}
+
         if attachments is True:
             doc_id += '?attachments=true'
+            kwargs['headers'] = HTTPHeaders(
+                {'Content-Type': 'application/json',
+                 'Accept': 'application/json',
+             })
 
         self._fetch(
             doc_id,
             _really_callback,
+            **kwargs
             )
 
     def get_attachment(self, doc_id, attachment_name, callback):
