@@ -24,17 +24,25 @@
 from __future__ import with_statement
 
 from datetime import datetime
+import sys
+
 from nose.tools import eq_ as eq
-from couch_util import setup, teardown, with_couchdb
-from util import with_ioloop, DatetimeEncoder
+from .couch_util import setup, teardown, with_couchdb
+from .util import with_ioloop, DatetimeEncoder
 
 try:
     import json
 except ImportError:
     import simplejson as json
 
-import functools
-import urllib
+try:
+    # Python 3
+    from urllib.request import urlopen
+    from urllib.error import HTTPError
+except ImportError:
+    # Python 2
+    from urllib2 import urlopen
+    from urllib2 import HTTPError
 
 import trombi
 import trombi.errors
@@ -71,8 +79,8 @@ def test_create_db(baseurl, ioloop):
     def create_callback(db):
         eq(db.error, False)
         assert isinstance(db, trombi.Database)
-        f = urllib.urlopen('%s_all_dbs' % baseurl)
-        assert 'couchdb-database' in json.load(f)
+        f = urlopen('%s_all_dbs' % baseurl)
+        assert 'couchdb-database' in json.loads(f.read().decode('utf-8'))
         ioloop.stop()
 
     s = trombi.Server(baseurl, io_loop=ioloop)
@@ -95,8 +103,8 @@ def test_db_exists(baseurl, ioloop):
         eq(result.error, True)
         eq(result.errno, trombi.errors.PRECONDITION_FAILED)
         eq(result.msg, "Database already exists: 'couchdb-database'")
-        f = urllib.urlopen('%s_all_dbs' % baseurl)
-        assert 'couchdb-database' in json.load(f)
+        f = urlopen('%s_all_dbs' % baseurl)
+        assert 'couchdb-database' in json.loads(f.read().decode('utf-8'))
         ioloop.stop()
 
     s.create('couchdb-database', callback=first_callback)
@@ -157,8 +165,9 @@ def test_delete_db(baseurl, ioloop):
 
     def delete_callback(result):
         eq(result.error, False)
-        f = urllib.urlopen('%s_all_dbs' % baseurl)
-        eq([x for x in json.load(f) if not x.startswith('_')], [])
+        f = urlopen('%s_all_dbs' % baseurl)
+        data = f.read().decode('utf-8')
+        eq([x for x in json.loads(data) if not x.startswith('_')], [])
         ioloop.stop()
 
     s.create('testdatabase', callback=create_callback)
@@ -366,13 +375,13 @@ def test_get_document_with_attachments(baseurl, ioloop):
             doc.load_attachment('foo', got_attachment)
 
         def got_attachment(data):
-            eq(data, 'bar')
+            eq(data, b'bar')
             ioloop.stop()
 
         db.set(
             {'testvalue': 'something'},
             create_doc_callback,
-            attachments={'foo': (None, 'bar')}
+            attachments={'foo': (None, b'bar')}
             )
 
     s = trombi.Server(baseurl, io_loop=ioloop)
@@ -388,14 +397,14 @@ def test_get_attachment(baseurl, ioloop):
             db.set(
                 {'testvalue': 'something'},
                 doc_created,
-                attachments={'foo': (None, 'bar')},
+                attachments={'foo': (None, b'bar')},
                 )
 
         def doc_created(doc):
             db.get_attachment(doc.id, 'foo', check_attachment)
 
         def check_attachment(data):
-            eq(data, 'bar')
+            eq(data, b'bar')
             ioloop.stop()
 
         start()
@@ -461,8 +470,9 @@ def test_create_document_custom_id(baseurl, ioloop):
 
             eq(doc['testvalue'], 'something')
 
-            f = urllib.urlopen('%stestdb/testid' % baseurl)
-            eq(json.load(f),
+            f = urlopen('%stestdb/testid' % baseurl)
+            data = f.read().decode('utf-8')
+            eq(json.loads(data),
                {'_id': 'testid',
                 '_rev': doc.rev,
                 'testvalue': 'something',
@@ -491,10 +501,17 @@ def test_delete_document(baseurl, ioloop):
         def delete_doc_callback(db):
             eq(db.error, False)
             assert isinstance(db, trombi.Database)
-            ioloop.stop()
 
-            f = urllib.urlopen('%stestdb/testid' % baseurl)
-            eq(f.getcode(), 404)
+            try:
+                urlopen('%stestdb/testid' % baseurl)
+            except HTTPError:
+                # Python 3
+                e = sys.exc_info()[1]
+                eq(e.code, 404)
+            else:
+                assert 0
+
+            ioloop.stop()
 
         db.set(
             'testid',
@@ -689,12 +706,12 @@ def test_save_attachment_inline(baseurl, ioloop):
             'testid',
             {'testvalue': 'something'},
             data_callback,
-            attachments={'foobar': (None, 'some textual data')},
+            attachments={'foobar': (None, b'some textual data')},
             )
 
     def data_callback(doc):
-        f = urllib.urlopen('%stestdb/testid/foobar' % baseurl)
-        eq(f.read(), 'some textual data')
+        f = urlopen('%stestdb/testid/foobar' % baseurl)
+        eq(f.read(), b'some textual data')
         ioloop.stop()
 
     s = trombi.Server(baseurl, io_loop=ioloop)
@@ -711,14 +728,14 @@ def test_save_attachment_inline_custom_content_type(baseurl, ioloop):
             {'testvalue': 'something'},
             data_callback,
             attachments={'foobar':
-                             ('application/x-custom', 'some textual data')
+                             ('application/x-custom', b'some textual data')
                          },
             )
 
     def data_callback(doc):
-        f = urllib.urlopen('%stestdb/testid/foobar' % baseurl)
+        f = urlopen('%stestdb/testid/foobar' % baseurl)
         eq(f.info()['Content-Type'], 'application/x-custom')
-        eq(f.read(), 'some textual data')
+        eq(f.read(), b'some textual data')
         ioloop.stop()
 
     s = trombi.Server(baseurl, io_loop=ioloop)
@@ -737,12 +754,12 @@ def test_save_attachment(baseurl, ioloop):
             )
 
     def create_doc_callback(doc):
-        data = 'some textual data'
+        data = b'some textual data'
         doc.attach('foobar', data, callback=data_callback)
 
     def data_callback(doc):
-        f = urllib.urlopen('%stestdb/testid/foobar' % baseurl)
-        eq(f.read(), 'some textual data')
+        f = urlopen('%stestdb/testid/foobar' % baseurl)
+        eq(f.read(), b'some textual data')
         ioloop.stop()
 
     s = trombi.Server(baseurl, io_loop=ioloop)
@@ -785,14 +802,14 @@ def test_load_attachment(baseurl, ioloop):
             )
 
     def create_doc_callback(doc):
-        data = 'some textual data'
+        data = b'some textual data'
         doc.attach('foobar', data, callback=attach_callback)
 
     def attach_callback(doc):
         doc.load_attachment('foobar', callback=data_callback)
 
     def data_callback(data):
-        eq(data, 'some textual data')
+        eq(data, b'some textual data')
         ioloop.stop()
 
     s = trombi.Server(baseurl, io_loop=ioloop)
@@ -832,14 +849,14 @@ def test_load_inline_attachment(baseurl, ioloop):
             'testid',
             {'testvalue': 'something'},
             attach_callback,
-            attachments={'foobar': (None, 'some textual data')},
+            attachments={'foobar': (None, b'some textual data')},
             )
 
     def attach_callback(doc):
         doc.load_attachment('foobar', callback=data_callback)
 
     def data_callback(data):
-        eq(data, 'some textual data')
+        eq(data, b'some textual data')
         ioloop.stop()
 
     s = trombi.Server(baseurl, io_loop=ioloop)
@@ -855,7 +872,7 @@ def test_load_inline_attachment_no_fetch(baseurl, ioloop):
             'testid',
             {'testvalue': 'something'},
             attach_callback,
-            attachments={'foobar': (None, 'some textual data')},
+            attachments={'foobar': (None, b'some textual data')},
             )
 
     def attach_callback(doc):
@@ -866,7 +883,7 @@ def test_load_inline_attachment_no_fetch(baseurl, ioloop):
         doc.load_attachment('foobar', callback=data_callback)
 
     def data_callback(data):
-        eq(data, 'some textual data')
+        eq(data, b'some textual data')
         ioloop.stop()
 
     s = trombi.Server(baseurl, io_loop=ioloop)
@@ -885,15 +902,22 @@ def test_delete_attachment(baseurl, ioloop):
             )
 
     def create_doc_callback(doc):
-        data = 'some textual data'
+        data = b'some textual data'
         doc.attach('foobar', data, callback=attach_callback)
 
     def attach_callback(doc):
         doc.delete_attachment('foobar', callback=delete_callback)
 
     def delete_callback(doc):
-        f = urllib.urlopen('%stestdb/testid/foobar' % baseurl)
-        eq(f.getcode(), 404)
+        try:
+            urlopen('%stestdb/testid/foobar' % baseurl)
+        except HTTPError:
+            # Python 3
+            e = sys.exc_info()[1]
+            eq(e.code, 404)
+        else:
+            assert 0
+
         ioloop.stop()
 
     s = trombi.Server(baseurl, io_loop=ioloop)
@@ -1279,7 +1303,7 @@ def test_copy_document_with_attachments(baseurl, ioloop):
         db.set(
             {'testvalue': 'something'},
             create_doc_callback,
-            attachments={'foo': (None, 'bar')}
+            attachments={'foo': (None, b'bar')}
             )
 
     def create_doc_callback(doc):
@@ -1288,7 +1312,7 @@ def test_copy_document_with_attachments(baseurl, ioloop):
     def copy_done(doc):
         eq(doc.id, 'newname')
         eq(dict(doc), {'testvalue': 'something'})
-        eq(doc.attachments.keys(), ['foo'])
+        eq(list(doc.attachments.keys()), ['foo'])
         eq(doc.attachments['foo']['content_type'], 'text/plain')
         ioloop.stop()
 
@@ -1304,7 +1328,7 @@ def test_copy_loaded_document_with_attachments_false(baseurl, ioloop):
         db.set(
             {'testvalue': 'something'},
             create_doc_callback,
-            attachments={'foo': (None, 'bar')}
+            attachments={'foo': (None, b'bar')}
             )
 
     def create_doc_callback(doc):
@@ -1319,7 +1343,7 @@ def test_copy_loaded_document_with_attachments_false(baseurl, ioloop):
         doc.load_attachment('foo', loaded_attachment)
 
     def loaded_attachment(attach):
-        eq(attach, 'bar')
+        eq(attach, b'bar')
         ioloop.stop()
 
     s = trombi.Server(baseurl, io_loop=ioloop)
@@ -1334,7 +1358,7 @@ def test_copy_loaded_document_with_attachments_true(baseurl, ioloop):
         db.set(
             {'testvalue': 'something'},
             create_doc_callback,
-            attachments={'foo': (None, 'bar')}
+            attachments={'foo': (None, b'bar')}
             )
 
     def create_doc_callback(doc):
@@ -1346,7 +1370,7 @@ def test_copy_loaded_document_with_attachments_true(baseurl, ioloop):
     def copy_done(doc):
         eq(doc.id, 'newname')
         eq(dict(doc), {'testvalue': 'something'})
-        eq(doc.attachments.keys(), ['foo'])
+        eq(list(doc.attachments.keys()), ['foo'])
         eq(doc.attachments['foo']['content_type'], 'text/plain')
         ioloop.stop()
 
