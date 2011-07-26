@@ -335,7 +335,12 @@ class Database(TrombiObject):
 
         def _really_callback(response):
             try:
-                content = json.loads(response.body.decode('utf-8'))
+                # If the connection to the server is malfunctioning,
+                # ie. the simplehttpclient returns 599 and no body,
+                # don't set the content as the response.code will not
+                # be 201 at that point either
+                if response.body is not None:
+                    content = json.loads(response.body.decode('utf-8'))
             except ValueError:
                 content = response.body
 
