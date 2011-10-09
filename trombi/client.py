@@ -64,9 +64,9 @@ def from_uri(uri, fetch_args=None, io_loop=None, **kwargs):
     if p.params or p.query or p.fragment:
         raise ValueError(
             'Invalid database address: %s (extra query params)' % uri)
-    if p.scheme != 'http':
+    if not p.scheme in ('http', https'):
         raise ValueError(
-            'Invalid database address: %s (only http:// is supported)' % uri)
+            'Invalid database address: %s (only http:// and https:// are supported)' % uri)
 
     baseurl = urlunsplit((p.scheme, p.netloc, '', '', ''))
     server = Server(baseurl, fetch_args, io_loop=io_loop, **kwargs)
