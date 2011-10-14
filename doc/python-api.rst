@@ -235,6 +235,58 @@ argument.
       Lists available databases. On success, calls *callback* with a
       generator object containing all databases.
 
+   .. method:: add_user(name, password, callback, doc=None)
+
+      Add a user with *name* and *password* to the *_users* database.
+      On success, calls *callback* with the users :class:`Document`.
+      If you want to store additional attributes in the user's
+      document, provide them as a *doc* dict.
+
+   .. method:: get_user(name, callback, attachments=False)
+
+      Load the user's document identified by *name*. Optionally
+      retrieve the *attachments*.
+
+   .. method:: update_user(user_doc, callback)
+
+      Update the document for the user. On success, *callback* is
+      called with the new :class:`Document`.
+
+   .. method:: update_user_password(username, password, callback)
+
+      Only update the user's password. On success, *callback* is
+      called with the new :class:`Document`.
+
+   .. method:: delete_user(user_doc, callback)
+
+      Delete a user from the CouchDB database. On success, *callback*
+      will be called with :class:`Database` as an argument.
+
+   .. method:: login(username, password, callback)
+
+      This method performs a login against `CouchDB session API`_ using
+      *username* and *password*. On succesfull login session cookie is
+      stored for subsequent requests and *callback* is called with
+      :class:`TrombiResult` as an argument.
+
+      Note, that the username and password are sent unencrypted on the
+      wire, so this method should be used either in fully trusted
+      network or over HTTPS connection.
+
+   .. method:: logout(callback)
+
+      This method performs a logout against `CouchDB session API`_. If
+      logout is succesfull, old session cookie is no longer used on
+      subsequent requests and *callback* is called with
+      :class:`TrombiResult` instance as an argument.
+
+   .. method:: session(callback)
+
+      This method fetches login details from `CouchDB Session API`_.
+      On success the *callback* is called with :class:`TrombiResult`
+      instance as an argument.
+
+      .. _CouchDB session API: http://wiki.apache.org/couchdb/Session_API
 
 Database
 ========
