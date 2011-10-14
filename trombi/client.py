@@ -812,7 +812,7 @@ class Paginator(TrombiObject):
         self.end_doc_id = None
 
     def get_page(self, design_doc, viewname, callback,
-            key=None, doc_id=None, forward=True, **kwargs):
+            key=None, doc_id=None, forward=True, **kw):
         """
         On success, callback is called with this Paginator object as an
         argument that is fully populated with the page data requested.
@@ -863,12 +863,14 @@ class Paginator(TrombiObject):
 
         kwargs = {'limit': self._limit,
                   'descending': True}
-        kwargs.update(kwargs)
-        if key and forward:
+        kwargs.update(kw)
+
+        if 'startkey' not in kwargs:
             kwargs['startkey'] = key
-            kwargs['start_doc_id'] = doc_id if doc_id else ''
-        elif key:
-            kwargs['startkey'] = key
+
+        if kwargs['startkey'] and forward and doc_id:
+            kwargs['start_doc_id'] = doc_id
+        elif kwargs['startkey'] and not forward:
             kwargs['start_doc_id'] = doc_id if doc_id else ''
             kwargs['descending'] = False if kwargs['descending'] else True
             kwargs['skip'] = 1
