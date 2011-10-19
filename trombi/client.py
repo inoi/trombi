@@ -24,6 +24,8 @@
 """Asynchronous CouchDB client"""
 
 import functools
+from hashlib import sha1
+import uuid
 import logging
 import re
 import collections
@@ -256,6 +258,48 @@ class Server(TrombiObject):
             '%s/%s' % (self.baseurl, '_all_dbs'),
             _really_callback,
             )
+
+    def add_user(self, name, password, callback, doc=None):
+        userdb = Database(self, '_users')
+
+        if doc and not isinstance(doc, Document):
+            doc = Document(userdb, doc)
+        elif not doc:
+            doc = Document(userdb, {})
+
+        doc['type'] = 'user'
+        if 'roles' not in doc:
+            doc['roles'] = []
+
+        if 'name' not in doc:
+            doc['name'] = name
+
+        if 'salt' not in doc:
+            doc['salt'] = str(uuid.uuid4())
+
+        if password:
+            doc['password_sha'] = sha1(password + doc['salt']).hexdigest()
+
+        if not name.startswith('org.couchdb.user:'):
+            name = 'org.couchdb.user:%s' % name
+
+        userdb.set(name, doc, callback)
+
+    def get_user(self, name, callback, attachments=False):
+        userdb = Database(self, '_users')
+
+        doc_id = name
+        if not name.startswith('org.couchdb.user:'):
+            doc_id = 'org.couchdb.user:%s' % name
+
+        userdb.get(doc_id, callback, attachments=attachments)
+
+    def update_user(self, user_doc, password, callback):
+        self.add_user(user_doc['name'], password, callback, doc=user_doc)
+
+    def delete_user(self, user_doc, callback):
+        userdb = Database(self, '_users')
+        userdb.delete(user_doc, callback)
 
 
 class Database(TrombiObject):
