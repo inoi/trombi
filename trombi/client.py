@@ -259,13 +259,12 @@ class Server(TrombiObject):
             _really_callback,
             )
 
-    def add_user(self, name, password, callback, doc=None):
+    def add_user(self, name, password, callback, doc={}):
         userdb = Database(self, '_users')
 
-        if doc and not isinstance(doc, Document):
+        if not isinstance(doc, Document):
+            user_doc = doc.copy()
             doc = Document(userdb, doc)
-        elif not doc:
-            doc = Document(userdb, {})
 
         doc['type'] = 'user'
         if 'roles' not in doc:
