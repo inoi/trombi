@@ -107,10 +107,21 @@ def test_update_user(baseurl, ioloop):
         ioloop.stop()
 
     userdoc[0]['roles'].append('test')
-    s.update_user(userdoc[0], None, update_callback)
+    s.update_user(userdoc[0], update_callback)
     ioloop.start()
 
     eq(userdoc[1]['roles'], ['test'])
+
+    def update_passwd_callback(doc):
+        assert not doc.error
+        userdoc.append(doc)
+        ioloop.stop()
+
+    s.update_user_password('updatetest', 'test2', update_passwd_callback)
+    ioloop.start()
+
+    eq(userdoc[1]['salt'], userdoc[2]['salt'])
+    eq(userdoc[1]['password_sha'] != userdoc[2]['password_sha'], True)
 
 
 @with_ioloop

@@ -259,30 +259,24 @@ class Server(TrombiObject):
             _really_callback,
             )
 
-    def add_user(self, name, password, callback, doc={}):
+    def add_user(self, name, password, callback, doc=None):
         userdb = Database(self, '_users')
 
-        if not isinstance(doc, Document):
-            user_doc = doc.copy()
-            doc = Document(userdb, doc)
+        if not doc:
+            doc = {}
 
         doc['type'] = 'user'
         if 'roles' not in doc:
             doc['roles'] = []
 
-        if 'name' not in doc:
-            doc['name'] = name
+        doc['name'] = name
+        doc['salt'] = str(uuid.uuid4())
+        doc['password_sha'] = sha1(password + doc['salt']).hexdigest()
 
-        if 'salt' not in doc:
-            doc['salt'] = str(uuid.uuid4())
+        if '_id' not in doc:
+            doc['_id'] = 'org.couchdb.user:%s' % name
 
-        if password:
-            doc['password_sha'] = sha1(password + doc['salt']).hexdigest()
-
-        if not name.startswith('org.couchdb.user:'):
-            name = 'org.couchdb.user:%s' % name
-
-        userdb.set(name, doc, callback)
+        userdb.set(doc, callback)
 
     def get_user(self, name, callback, attachments=False):
         userdb = Database(self, '_users')
@@ -293,8 +287,18 @@ class Server(TrombiObject):
 
         userdb.get(doc_id, callback, attachments=attachments)
 
-    def update_user(self, user_doc, password, callback):
-        self.add_user(user_doc['name'], password, callback, doc=user_doc)
+    def update_user(self, user_doc, callback):
+        userdb = Database(self, '_users')
+        userdb.set(user_doc, callback)
+
+    def update_user_password(self, username, password, callback):
+        def _really_callback(user_doc):
+            if user_doc.error:
+                callback(user_doc)
+            user_doc['password_sha'] = sha1(password + user_doc['salt']).hexdigest()
+            self.update_user(user_doc, callback)
+
+        self.get_user(username, _really_callback)
 
     def delete_user(self, user_doc, callback):
         userdb = Database(self, '_users')
