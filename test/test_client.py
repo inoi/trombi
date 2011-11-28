@@ -685,6 +685,20 @@ def test_set_document_change_id(baseurl, ioloop):
 
 @with_ioloop
 @with_couchdb
+def test_set_document_with_kw_callback(baseurl, ioloop):
+    def do_test(db):
+        def update_doc(doc):
+            ioloop.stop()
+
+        db.set('testid', {'testvalue': 'something'}, callback=update_doc)
+
+    s = trombi.Server(baseurl, io_loop=ioloop)
+    s.create('testdb', do_test)
+    ioloop.start()
+
+
+@with_ioloop
+@with_couchdb
 def test_get_document_does_not_exist(baseurl, ioloop):
     def create_db_callback(db):
         db.get('foo', callback=get_callback)

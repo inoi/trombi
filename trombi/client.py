@@ -331,6 +331,9 @@ class Database(TrombiObject):
         self._fetch('', _really_callback)
 
     def set(self, *args, **kwargs):
+        cb = kwargs.pop('callback', None)
+        if cb:
+            args += (cb,)
         if len(args) == 2:
             data, callback = args
             doc_id = None
@@ -338,7 +341,7 @@ class Database(TrombiObject):
             doc_id, data, callback = args
         else:
             raise TypeError(
-                'Database.set expected 2 or 3 arguments, got %d' % len(args))
+                'Database.set takes at most 2 non-keyword arguments.')
 
         if kwargs:
             if list(kwargs.keys()) != ['attachments']:
