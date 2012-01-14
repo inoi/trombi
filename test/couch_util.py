@@ -63,23 +63,9 @@ def setup():
     port = 8921
     baseurl = 'http://localhost:%d/' % port
 
-    with open(ini, 'w') as fobj:
-        fobj.write('''\
-[couchdb]
-database_dir = %(dbdir)s
-view_index_dir = %(dbdir)s
-
-[httpd]
-port = %(port)d
-bind_address = 127.0.0.1
-
-[log]
-file = %(log)s
-''' % dict(dbdir=dbdir, log=log, port=port))
-
-    cmdline = 'couchdb -a %s' % ini
+    cmdline = 'couchdb -n -a test/conf/local.ini'
     null = open('/dev/null', 'w')
-    _proc = subprocess.Popen(cmdline, shell=True, stdout=null, stderr=null)
+    _proc = subprocess.Popen(cmdline, shell=True)#, stdout=null, stderr=null)
 
     # Wait for couchdb to start
     time.sleep(1)
