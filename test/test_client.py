@@ -1027,7 +1027,7 @@ def test_load_view_with_results(baseurl, ioloop):
                     'language': 'javascript',
                     'views': {
                         'all': {
-                            'map': 'function (doc) { emit(null, doc) }',
+                            'map': '(function (doc) { emit(null, doc) })',
                             }
                         }
                     }
@@ -1068,9 +1068,9 @@ def test_load_view_with_grouping_reduce(baseurl, ioloop):
                     'language': 'javascript',
                     'views': {
                         'all': {
-                            'map': 'function (doc) { emit(doc.data, doc) }',
-                            'reduce': 'function (key, value) { return \
-                                       value.length }',
+                            'map': '(function (doc) { emit(doc.data, doc) })',
+                            'reduce': '(function (key, value) { return \
+                                       value.length })',
                             }
                         }
                     }
@@ -1111,7 +1111,7 @@ def test_load_view_with_keys(baseurl, ioloop):
                     'language': 'javascript',
                     'views': {
                         'all': {
-                            'map': 'function (doc) { emit(doc.data, doc) }',
+                            'map': '(function (doc) { emit(doc.data, doc) })',
                             }
                         }
                     }
@@ -1161,9 +1161,9 @@ def test_load_view_no_such_view(baseurl, ioloop):
                     'language': 'javascript',
                     'views': {
                         'foobar': {
-                            'map': 'function (doc) { emit(doc.data, doc) }',
-                            'reduce': 'function (key, value) { return \
-                                       value.length }',
+                            'map': '(function (doc) { emit(doc.data, doc) })',
+                            'reduce': '(function (key, value) { return \
+                                       value.length })',
                             }
                         }
                     }
@@ -1203,7 +1203,7 @@ def test_temporary_view_no_such_db(baseurl, ioloop):
 
     s = trombi.Server(baseurl, io_loop=ioloop)
     db = trombi.Database(s, 'doesnotexist')
-    db.temporary_view(view_results, 'function() { emit(null);}')
+    db.temporary_view(view_results, '(function() { emit(null);})')
     ioloop.start()
 
 
@@ -1213,7 +1213,7 @@ def test_temporary_view_nonempty_results(baseurl, ioloop):
     def do_test(db):
         def doc_ready(doc):
             db.temporary_view(view_results,
-                              'function(doc) { emit(null, doc); }')
+                              '(function(doc) { emit(null, doc); })')
 
         def view_results(results):
             eq(len(results), 1)
@@ -1246,8 +1246,8 @@ def test_temporary_view_with_reduce_fun(baseurl, ioloop):
         def doc2_ready(doc):
             db.temporary_view(
                 view_results,
-                map_fun='function(doc) { emit(null, doc.value); }',
-                reduce_fun='function(key, values) { return sum(values); }'
+                map_fun='(function(doc) { emit(null, doc.value); })',
+                reduce_fun='(function(key, values) { return sum(values); })'
             )
 
         def view_results(result):
@@ -1451,7 +1451,7 @@ def test_view_results_with_offset(baseurl, ioloop):
                     'language': 'javascript',
                     'views': {
                         'all': {
-                            'map': 'function (doc) { emit(null, doc) }',
+                            'map': '(function (doc) { emit(null, doc) })',
                             }
                         }
                     }
@@ -1493,7 +1493,7 @@ def test_view_results_include_docs(baseurl, ioloop):
                     'language': 'javascript',
                     'views': {
                         'all': {
-                            'map': 'function (doc) { emit(null, doc) }',
+                            'map': '(function (doc) { emit(null, doc) })',
                             }
                         }
                     }
@@ -1535,8 +1535,8 @@ def test_view_results_include_docs_with_bogus_docs(baseurl, ioloop):
                     'language': 'javascript',
                     'views': {
                         'all': {
-                            'map': 'function (doc) { emit(null, \
-                            {"_id": "bogus"}) }',
+                            'map': '(function (doc) { emit(null, \
+                            {"_id": "bogus"}) })',
                             }
                         }
                     }
