@@ -39,9 +39,57 @@ except ImportError:
     from urllib2 import URLError
 
 import nose.tools
-from tornado.httpclient import HTTPClient
+from tornado.httpclient import HTTPClient, HTTPError
 
 baseurl = ''
+
+_proc = None
+
+
+def setup_with_admin():
+    global _proc, baseurl
+    try:
+        shutil.rmtree('tmp')
+    except OSError:
+        # Python 3
+        err = sys.exc_info()[1]
+        if err.errno != errno.ENOENT:
+            raise
+
+    os.mkdir('tmp')
+    os.mkdir('tmp/couch')
+
+    port = 8922
+    baseurl = 'http://localhost:%d/' % (port)
+
+    dir = os.path.dirname(__file__)
+
+    cmdline = 'couchdb -n -a %s -a %s' % (
+        os.path.join(dir, 'conf/local.ini'),
+        os.path.join(dir, 'conf/local_session.ini'),
+    )
+
+    null = open('/dev/null', 'w')
+    _proc = subprocess.Popen(
+        cmdline, shell=True, stdout=null, stderr=null
+    )
+
+    # Wait for couchdb to start
+    time.sleep(1)
+    # Wait for couchdb to start
+
+    while True:
+        try:
+            f = request.urlopen('http://localhost:%s' % port)
+        except URLError:
+            continue
+        try:
+            json.loads(f.read().decode('utf-8'))
+        except ValueError:
+            continue
+        # Got a sensible response
+        break
+
 
 def setup():
     global _proc, baseurl
@@ -56,16 +104,13 @@ def setup():
     os.mkdir('tmp')
     os.mkdir('tmp/couch')
 
-    dbdir = 'tmp/couch'
-    ini = 'tmp/local.ini'
-    log = 'tmp/couch.log'
-
     port = 8921
-    baseurl = 'http://localhost:%d/' % port
+    baseurl = 'http://localhost:%d/' % (port)
 
-    cmdline = 'couchdb -n -a test/conf/local.ini'
+    dir = os.path.dirname(__file__)
+    cmdline = 'couchdb -n -a %s' % os.path.join(dir, 'conf/local.ini')
     null = open('/dev/null', 'w')
-    _proc = subprocess.Popen(cmdline, shell=True)#, stdout=null, stderr=null)
+    _proc = subprocess.Popen(cmdline, shell=True, stdout=null, stderr=null)
 
     # Wait for couchdb to start
     time.sleep(1)
@@ -73,7 +118,7 @@ def setup():
 
     while True:
         try:
-            f = request.urlopen(baseurl)
+            f = request.urlopen('http://localhost:%s' % port)
         except URLError:
             continue
         try:
@@ -191,7 +236,7 @@ def with_couchdb(func):
             dbs = json.loads(response.body.decode('utf-8'))
         except ValueError:
             print >> sys.stderr, \
-                "CouchDB's response was invalid JSON: %s" % db_string
+                "CouchDB's response was invalid JSON: %s" % response.body
             sys.exit(2)
 
         for database in dbs:

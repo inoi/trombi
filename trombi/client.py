@@ -30,6 +30,7 @@ import logging
 import re
 import collections
 import tornado.ioloop
+import urllib
 
 try:
     # Python 3
@@ -145,6 +146,7 @@ class Server(TrombiObject):
     def __init__(self, baseurl, fetch_args=None, io_loop=None,
                  json_encoder=None, **client_args):
         self.error = False
+        self.session_cookie = None
         self.baseurl = baseurl
         if self.baseurl[-1] == '/':
             self.baseurl = self.baseurl[:-1]
@@ -177,6 +179,14 @@ class Server(TrombiObject):
         }
         fetch_args.update(self._fetch_args)
         fetch_args.update(kwargs)
+
+        if self.session_cookie:
+            fetch_args['X-CouchDB-WWW-Authenticate': 'Cookie']
+            if 'Cookie' in fetch_args:
+                fetch_args['Cookie'] += '; %s' % self.session_cookie
+            else:
+                fetch_args['Cookie'] = self.sesison_cookie
+
         self._client.fetch(*args, **fetch_args)
 
     def create(self, name, callback):
@@ -303,6 +313,42 @@ class Server(TrombiObject):
     def delete_user(self, user_doc, callback):
         userdb = Database(self, '_users')
         userdb.delete(user_doc, callback)
+
+    def logout(self, callback):
+        def _really_callback(response):
+            if response.code == 200:
+                self.session_cookie = None
+                callback(TrombiResult(json.loads(response.body)))
+            else:
+                callback(_error_response(response))
+
+        url = '%s/%s' % (self.baseurl, '_session')
+        self._client.fetch(url, _really_callback, method='DELETE')
+
+    def login(self, username, password, callback):
+        def _really_callback(response):
+            if response.code in (200, 302):
+                self.session_cookie = response.headers['Set-Cookie']
+                response_body = json.loads(response.body)
+                callback(TrombiResult(response_body))
+            else:
+                callback(_error_response(response))
+
+        body = urllib.urlencode({'name': username, 'password': password})
+        url = '%s/%s' % (self.baseurl, '_session')
+
+        self._client.fetch(url, _really_callback, method='POST', body=body)
+
+    def session(self, callback):
+        def _really_callback(response):
+            if response.code == 200:
+                body = json.loads(response.body)
+                callback(TrombiResult(body))
+            else:
+                callback(_error_response(response))
+
+        url = '%s/%s' % (self.baseurl, '_session')
+        self._client.fetch(url, _really_callback)
 
 
 class Database(TrombiObject):

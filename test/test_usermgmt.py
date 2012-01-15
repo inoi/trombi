@@ -30,7 +30,7 @@ import hashlib
 import sys
 
 from nose.tools import eq_ as eq
-from .couch_util import setup as setup, teardown, with_couchdb
+from .couch_util import setup, teardown, with_couchdb
 from .util import with_ioloop, DatetimeEncoder
 
 try:
