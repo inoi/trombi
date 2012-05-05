@@ -677,7 +677,7 @@ class Database(TrombiObject):
         if timeout is not None:
             # CouchDB takes timeouts in milliseconds
             couchdb_params['timeout'] = timeout * 1000
-            params['request_timeout'] = timeout + 20
+            params['request_timeout'] = timeout + 1
         url = '_changes?%s' % urlencode(couchdb_params)
         if feed == 'continuous':
             params['streaming_callback'] = _stream
